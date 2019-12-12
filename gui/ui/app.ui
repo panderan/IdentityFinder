@@ -124,6 +124,42 @@
    <addaction name="menuStage"/>
    <addaction name="menu_help"/>
   </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+     <kerning>true</kerning>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QStatusBar {
+	background: #dfdfdf;
+	border-top: 1px solid #aaa;
+}
+
+QStatusBar QLabel {
+	border: 0px;
+	border-left:2px solid #aaa;
+	font: 16px;
+	margin-left: 5px;
+	margin-right: 5px;
+}</string>
+   </property>
+   <property name="sizeGripEnabled">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
   <action name="action_open">
    <property name="text">
     <string>Open</string>

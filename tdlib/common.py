@@ -3,37 +3,103 @@
 ''' 共用函数
 '''
 
-import cv2
+from itertools import accumulate, repeat
+from operator import add
+from functools import reduce
 import numpy as np
+import cv2
 
-def uniform_illumination(gray_image):
-    ''' 均匀光照
+def tdHighConstract(image, size=255):
+    ''' 高反差保留
+    Args:
+        image 输入的灰度图像
+        size  高斯滤波的模板大小
     '''
-    b_mean = gray_image.mean()
-    ksize = 32
-
-    new_row = int(gray_image.shape[0]/ksize)
-    new_col = int(gray_image.shape[1]/ksize)
-
-    adj_mat = np.zeros([new_row, new_col])
-    for i in range(new_row):
-        for j in range(new_col):
-            sub_image = gray_image[ksize*i:ksize*(i+1)-1, ksize*j:ksize*(j+1)-1]
-            adj_mat[i, j] = sub_image.mean()
-
-    adj_mat = adj_mat - b_mean
-    adj_mat = cv2.resize(adj_mat, (gray_image.shape[1], gray_image.shape[0]))
-    result = gray_image - adj_mat
-    return np.uint8(result)
+    guassblur_image = cv2.GaussianBlur(image, (size, size), 0)
+    high_constrast_image = np.int64(image) - np.int64(guassblur_image)
+    if high_constrast_image.min() < 0:
+        high_constrast_image -= high_constrast_image.min()
+    if high_constrast_image.max() != 255:
+        high_constrast_image = cv2.convertScaleAbs(high_constrast_image, None, 255/high_constrast_image.max(), 0)
+    return np.uint8(high_constrast_image)
 
 
-def apply_canny(gray_img, sigma=0.33):
+def tdCalcHist(image, arg1=21, arg2=21, arg3=21, offset=0.10):
+    ''' 提取两种字符形式
+    黑底白字图和白底黑字图
+    Args:
+        image 输入的灰度图像
+        offset 偏移
+        arg1,arg2,arg3 同 cv2.bilateralFilter 中的参数位置
+    '''
+    # 计算基础灰度值（中值）
+    hist_image = cv2.calcHist([image], [0], None, [256], [0, 255]).T.tolist()[0]
+    medi = reduce(add, hist_image)/2
+    accu = accumulate(hist_image, add)
+    base_value = [i for i, v in enumerate(zip(accu, repeat(medi))) if v[0] > v[1]][0]
+
+    # 计算黑底白字图
+    hist_left = hist_image[:base_value]
+    hist_accu_left = accumulate(hist_left, add)
+    cutoff = reduce(add, hist_left)*offset  # for save
+    threshold = [i for i, v in enumerate(zip(hist_accu_left, repeat(cutoff))) if v[0] > v[1]][0]
+    left = np.int64(image.copy())
+    left[left >= threshold] = threshold
+    left = cv2.convertScaleAbs(left, 0, 255/left.max(), 0)
+    left = cv2.bilateralFilter(left, arg1, arg2, arg3)
+
+    # 计算白底黑字图
+    hist_right = hist_image[base_value:]
+    hist_accu_right = accumulate(hist_right, add)
+    cutoff = reduce(add, hist_right)*(1-offset)  # for cut
+    threshold = [i for i, v in enumerate(zip(hist_accu_right, repeat(cutoff))) if v[0] > v[1]][0] + base_value
+    right = np.int64(image.copy())
+    right[right <= threshold] = threshold
+    right = right - right.min()
+    right = cv2.convertScaleAbs(right, 0, 255/right.max(), 0)
+    right = cv2.bilateralFilter(right, 21, 21, 21)
+    return left, right
+
+
+def tdCanny(image, sigma=0.33, offset=0.0):
     ''' 提取 Canny 边缘
+    Args:
+        image 输入的灰度图像
+        sigma Canny上下阈值偏离均程度
+        offset 均值偏离程度
     '''
-    v = np.median(gray_img)
+    image = cv2.GaussianBlur(image, (5, 5), 0)
+    v = np.median(image)
+    if offset != 0:
+        v += (image.max()-v)*offset if offset > 0 else (v-image.min())*(-offset)
     lower = int(max(0, (1.0 - sigma) * v))
     upper = int(min(255, (1.0 + sigma) * v))
-    return cv2.Canny(gray_img, lower, upper)
+    return cv2.Canny(image, lower, upper)
+
+
+def tdSobel(image):
+    ''' 计算图像梯度
+    '''
+    ddepth = cv2.CV_16S
+    image = cv2.GaussianBlur(image, (5, 5), 0)
+    gradx = cv2.Sobel(image, ddepth, 1, 0)
+    abs_gradx = cv2.convertScaleAbs(gradx)
+    grady = cv2.Sobel(image, ddepth, 0, 1)
+    abs_grady = cv2.convertScaleAbs(grady)
+    grad = cv2.addWeighted(abs_gradx, 0.5, abs_grady, 0.5, 0)
+    return grad, gradx, abs_gradx, grady, abs_grady
+
+
+def tdShape(image):
+    ''' 图像锐化
+    '''
+    kel = np.array([[-1, -1, -1],
+                    [-1, 9, -1],
+                    [-1, -1, -1]])
+    shape_image = cv2.filter2D(image, cv2.CV_8U, kel)
+    shape_image = cv2.medianBlur(shape_image, 3)
+    shape_image = cv2.bilateralFilter(shape_image, 21, 21, 21)
+    return shape_image
 
 
 def is_in_range(num, range_numlist):

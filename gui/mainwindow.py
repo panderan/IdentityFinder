@@ -5,16 +5,17 @@ mainwindow.py
 '''
 import logging
 from PyQt5.QtCore import Qt, QFile, QIODevice, QTextStream
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QFileDialog, QLabel
 from PyQt5.QtGui import QImage, QIcon
 import gui.ui.app_ui as ui
 import gui.resources.resources
 from gui.app_widgets.preprocess_display_widget import PreprocessDisplayWidget
 from gui.app_widgets.extract_display_widget import ExtractDisplayWidget
 from gui.app_widgets.merging_display_widget import MergeDisplayWidget
-from conf.config import TdConfig
+from conf.config import TdConfig, AppSettings
 
 logger = logging.getLogger(__name__)
+
 
 
 class AppMainWindow(QMainWindow):
@@ -37,12 +38,20 @@ class AppMainWindow(QMainWindow):
 
         self.initConnects()
         self.initResources()
+
+        self.statusbar_label_confile = QLabel()
+        self.statusbar_label_curstage = QLabel()
+        self.ui.statusbar.addPermanentWidget(self.statusbar_label_curstage)
+        self.ui.statusbar.addPermanentWidget(self.statusbar_label_confile)
+        self.ui.toolBar.setVisible(False)
+
         self.createPrepDisplayWidget()
         self.createExtractDisplayWidget()
         self.createMergeDisplayWidget()
         self.createIdentifyWithFeatureDisplayWidget()
 
         self.onActionPreprocessing()
+        self.updateStatusBar()
         return
 
     def initConnects(self):
@@ -81,6 +90,12 @@ class AppMainWindow(QMainWindow):
         strfile.close()
         return
 
+    def updateStatusBar(self):
+        ''' 更新状态栏信息
+        '''
+        self.statusbar_label_confile.setText(AppSettings.config_file_path)
+        self.statusbar_label_curstage.setText(AppSettings.curstage)
+
     def onActionAbout(self):
         '''
         About 响应函数
@@ -96,7 +111,7 @@ class AppMainWindow(QMainWindow):
                                         '~', "Image files (*.jpg *.gif)")
         if fname == '':
             return
-        input_image = QImage(fname).convertToFormat(QImage.Format_RGB888)
+        input_image = QImage(fname).convertToFormat(QImage.Format_RGB32)
         self.preprocess_display_widget.setImage(input_image)
         return
 
@@ -213,7 +228,7 @@ class AppMainWindow(QMainWindow):
     def onActionExtractorRequireData(self, chnls):
         ''' 获取 Extracter 所需的数据
         '''
-        config = TdConfig().getPrepConfig() if self.preprocess_display_widget.control_panel is None \
+        config = TdConfig(AppSettings.config_file_path).getPrepConfig() if self.preprocess_display_widget.control_panel is None \
                                             else self.preprocess_display_widget.control_panel.getConfiguration()
         self.preprocess_display_widget.preprocesser.setConfig(config)
 

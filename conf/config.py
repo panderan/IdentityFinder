@@ -4,25 +4,30 @@
 '''
 
 import sys
+from enum import Enum
 import yaml
 from tdlib.filters import TdFilterCheckType
 
+
+class TdPrepConfigKeys(Enum):
+    ''' 预处理配置的Keys
+    '''
+    TOTAL_PIXELS = 0    # 总像素量
+    BILATERAL = 1       # 双边滤波参数
+    GAUSS_SIZE = 2      # 高斯模板大小
+    OFFSET = 3          # 字体类型偏移
+    DEBUG = 4
+    DEBUG_SOURCE = 5
 
 class TdPrepConfig:
     ''' 预处理参数
     '''
     def __init__(self, yaml_config=None):
         self.prep_configs = {
-            'total_pixels': 0,          # 总像素量
-            'canny_max': 0.0,           # canny 上限
-            'canny_min': 0.0,           # canny 下限
-            'gamma': 0.0,               # gamma 值
-            'sobel': False,             # 是否过滤掉水平边缘
-            'sigmod_center': 0.0,       # sigmod 中心点 [0.0, 1.0]
-            'sigmod_zoom': 0,           # sigmod 缩放倍率
-            'struct_element_size': 0,   # 结构元素大小 RECT
-            'gauss_blur_size': 0,       # 高斯模糊大小
-            'hat': 0                    # 顶底冒运算
+            TdPrepConfigKeys.TOTAL_PIXELS: 0,
+            TdPrepConfigKeys.BILATERAL: [21, 21, 21],
+            TdPrepConfigKeys.GAUSS_SIZE: 255,
+            TdPrepConfigKeys.OFFSET: 10
         }
         if yaml_config is not None:
             self.setConfig(yaml_config)
@@ -32,21 +37,20 @@ class TdPrepConfig:
         '''
         yaml_data = configs['prep']
         TdPrepConfig.setConfigItem(self, 'total_pixels', int(yaml_data.get('total_pixels', 0)))
-        TdPrepConfig.setConfigItem(self, 'gamma', float(yaml_data.get('gamma', 0.0)))
-        TdPrepConfig.setConfigItem(self, 'struct_element_size', int(yaml_data.get('struct_element_size', 0)))
-        TdPrepConfig.setConfigItem(self, 'gauss_blur_size', int(yaml_data.get('gauss_blur_size', 0)))
-        TdPrepConfig.setConfigItem(self, 'sigmod_center', float(yaml_data.get('sigmod', [0, 0])[0]))
-        TdPrepConfig.setConfigItem(self, 'sigmod_zoom', float(yaml_data.get('sigmod', [0, 0])[1]))
-        TdPrepConfig.setConfigItem(self, 'canny_max', float(yaml_data.get('canny', [0, 0])[0]))
-        TdPrepConfig.setConfigItem(self, 'canny_min', float(yaml_data.get('canny', [0, 0])[1]))
-        TdPrepConfig.setConfigItem(self, 'sobel', yaml_data.get('sobel', False))
-        TdPrepConfig.setConfigItem(self, 'hat', int(yaml_data.get('hat', 0)))
+        TdPrepConfig.setConfigItem(self, 'bilateral', yaml_data.get('bilateral', 0.0))
+        TdPrepConfig.setConfigItem(self, 'gauss_size', int(yaml_data.get('gauss_size', 0)))
+        TdPrepConfig.setConfigItem(self, 'offset', float(yaml_data.get('offset', 0)))
 
     def setConfigItem(self, key, value):
         ''' 设置单个参数
         '''
-        if self.prep_configs.get(key, None) is not None:
-            self.prep_configs[key] = value
+        keysdict = {"total_pixels":TdPrepConfigKeys.TOTAL_PIXELS,
+                    "bilateral":TdPrepConfigKeys.BILATERAL,
+                    "gauss_size":TdPrepConfigKeys.GAUSS_SIZE,
+                    "offset":TdPrepConfigKeys.OFFSET}
+        conf_key = keysdict.get(key, None)
+        if conf_key is not None:
+            self.prep_configs[conf_key] = value
             return True
         return False
 
@@ -235,12 +239,13 @@ class TdMergeTLConfig:
 class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
     ''' 配置文件类
     '''
-    def __init__(self, config_file_path="conf/default.yaml"):
+    def __init__(self, config_file_path=None):
         TdPrepConfig.__init__(self)
         TdExtractConfig.__init__(self)
         TdMergeTLConfig.__init__(self)
         TdFilterConfig.__init__(self)
-        self.setConfigFromFile(config_file_path)
+        if config_file_path is not None:
+            self.loadConfigFromFile(config_file_path)
 
     def getPrepConfig(self):
         ''' 获取预处理参数
@@ -262,7 +267,7 @@ class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
         '''
         return TdFilterConfig.getConfig(self, keystr)
 
-    def setConfigFromFile(self, config_file_path):
+    def loadConfigFromFile(self, config_file_path):
         ''' 加载配置文件
         '''
         try:
@@ -276,3 +281,12 @@ class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
         TdExtractConfig.setConfig(self, config)
         TdMergeTLConfig.setConfig(self, config)
         TdFilterConfig.setConfig(self, config)
+
+
+class AppSettings:
+    ''' 程序的运行时设置
+    '''
+    config_file_path = "conf/default.yaml"
+    curstage = "preprocessing"
+    def __init__(self):
+        pass

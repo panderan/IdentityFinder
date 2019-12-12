@@ -17,9 +17,8 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     logger.info("Identity Finder Started")
-    APP = QApplication(sys.argv)
-    MW = mainwindow.AppMainWindow()
-    MW.ui.plain_text_edit_output.setVisible(False)
-
-    MW.show()
-    sys.exit(APP.exec_())
+    app = QApplication(sys.argv)
+    mw = mainwindow.AppMainWindow()
+    mw.ui.plain_text_edit_output.setVisible(False)
+    mw.show()
+    sys.exit(app.exec_())

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'app.ui'
+# Form implementation generated from reading ui file 'gui/ui/app.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.2
 #
@@ -62,6 +62,29 @@ class Ui_MainWindow(object):
         self.menuStage = QtWidgets.QMenu(self.menubar)
         self.menuStage.setObjectName("menuStage")
         MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        font.setKerning(True)
+        self.statusbar.setFont(font)
+        self.statusbar.setStyleSheet("QStatusBar {\n"
+"    background: #dfdfdf;\n"
+"    border-top: 1px solid #aaa;\n"
+"}\n"
+"\n"
+"QStatusBar QLabel {\n"
+"    border: 0px;\n"
+"    border-left:2px solid #aaa;\n"
+"    font: 16px;\n"
+"    margin-left: 5px;\n"
+"    margin-right: 5px;\n"
+"}")
+        self.statusbar.setSizeGripEnabled(False)
+        self.statusbar.setObjectName("statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+        self.toolBar = QtWidgets.QToolBar(MainWindow)
+        self.toolBar.setObjectName("toolBar")
+        MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.action_open = QtWidgets.QAction(MainWindow)
         self.action_open.setObjectName("action_open")
         self.action_exit = QtWidgets.QAction(MainWindow)
@@ -120,6 +143,7 @@ class Ui_MainWindow(object):
         self.menu_settings.setTitle(_translate("MainWindow", "Settings"))
         self.menu_help.setTitle(_translate("MainWindow", "Help"))
         self.menuStage.setTitle(_translate("MainWindow", "Stage"))
+        self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
         self.action_open.setText(_translate("MainWindow", "Open"))
         self.action_exit.setText(_translate("MainWindow", "Exit"))
         self.action_load_config.setText(_translate("MainWindow", "Load Config"))
