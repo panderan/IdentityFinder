@@ -11,6 +11,7 @@ import math
 import numpy as np
 import cv2
 from tdlib.common import is_in_range
+from conf.config import TdMergeTLConfigKey
 
 
 logger = logging.getLogger(__name__)
@@ -117,8 +118,9 @@ class TdMergingData:
     def getRegionDirection(region_ro_rect):
         ''' 返回 region 的方向
         '''
-        init_angle = 0 if region_ro_rect[1][0] > region_ro_rect[1][1] else 90
-        init_angle -= region_ro_rect[2]
+        init_angle = 0 if region_ro_rect[1][0] > region_ro_rect[1][1] else -90
+        init_angle += region_ro_rect[2]
+        init_angle = init_angle % 180
         return init_angle
 
     def getRegionAspectRatio(self, region_ro_rect):
@@ -468,7 +470,7 @@ class TdMergingTextLine:
     ''' 合并文本行
     '''
     def __init__(self):
-        self.scope_lim = 25
+        self.scope_lim = 100
 
         self.t_of_merged_areasize_lim = 20000       # 若合并后的大小超过此阈值则拒绝合并
         self.t_of_merged_aspect_lim = [0.0, 3.0]    # 若合并后的长宽比超过此阈值则拒绝合并
@@ -484,14 +486,15 @@ class TdMergingTextLine:
     def setConfig(self, config):
         ''' 设置参数
         '''
-        self.t_of_merged_areasize_lim = config.get('combined_area_size_lim', 20000)
-        self.t_of_merged_aspect_lim = config.get('combined_aspect_ratio_lim', [0.0, 0.3])
-        self.t_of_overlap_ratio = config.get('overlap_ratio', 0.25)
-        self.t_of_distance = config.get('distance', 2.6)
+        self.t_of_merged_areasize_lim = config.get(TdMergeTLConfigKey.COMBINED_AREA_SIZE_LIM, 20000)
+        self.t_of_merged_aspect_lim = config.get(TdMergeTLConfigKey.COMBINED_ASPECT_RATIO_LIM, [0.0, 0.3])
+        self.t_of_overlap_ratio = config.get(TdMergeTLConfigKey.OVERLAP_RATIO, 0.25)
+        self.t_of_distance = config.get(TdMergeTLConfigKey.DISTANCE, 2.6)
         strategy_dict = {"horizon": MergingStrategy.HORIZON.value,
                          "vertical": MergingStrategy.VERTICAL.value
                         }
-        self.strategy = strategy_dict.get(config.get('strategy', "horizon"), 0)
+        self.strategy = strategy_dict.get(config.get(TdMergeTLConfigKey.STRATEGY, "horizon"), 0)
+        self.scope_lim = config.get(TdMergeTLConfigKey.SCOPE_LIM, 100)
 
     def mergeTextLine(self, regions):
         ''' 合并文本行
@@ -680,6 +683,7 @@ class TdMergingTextLine:
         if centers_vector[0] == 0:
             return 90 if centers_vector[1] > 0 else -90
         angle = math.degrees(math.atan(centers_vector[1]/centers_vector[0]))
+        angle = angle % 180
         return angle
 
     def _isAngleSatisfy(self, angle, threshold, flag):
@@ -710,8 +714,8 @@ class TdMergingTextLine:
         dir1 = data.getParamDirection(id1)
         dir2 = data.getParamDirection(id2)
         centerline_dir = self._getCenterLineDirection(data, id1, id2)
-        test_angle1 = min([abs((centerline_dir-dir1)%360), abs((centerline_dir-(dir1+180))%360)])
-        test_angle2 = min([abs((centerline_dir-dir2)%360), abs((centerline_dir-(dir2+180))%360)])
+        test_angle1 = min([abs(centerline_dir-dir1), 180-abs(centerline_dir-dir1)])
+        test_angle2 = min([abs(centerline_dir-dir2), 180-abs(centerline_dir-dir2)])
         threshold = self.get_dirtection_threshold(data, id1, id2)
         ret1 = self._isAngleSatisfy(test_angle1, threshold, dir_type)
         ret2 = self._isAngleSatisfy(test_angle2, threshold, dir_type)
@@ -780,7 +784,7 @@ class TdMergingTextLine:
         ''' 在背景图中画出给定region
         '''
         for region in regions:
-            bg_image = cv2.drawContours(bg_image, [region], 0, color, draw_type)
+            bg_image = cv2.drawContours(bg_image, [region], 0, color, 1, draw_type)
         return bg_image
 
 

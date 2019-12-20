@@ -100,8 +100,6 @@
      <string>Settings</string>
     </property>
     <addaction name="action_load_config"/>
-    <addaction name="action_save_config"/>
-    <addaction name="action_preferences"/>
     <addaction name="action_open_current_control_panel"/>
    </widget>
    <widget class="QMenu" name="menu_help">

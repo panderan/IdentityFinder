@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QWidget, QListWidgetItem
 from gui.ui.verbose_show_ui import Ui_VerboseDisplay
 from gui.app_widgets.basic_display_widget import BasicDisplayWidget
 from tdlib.location import debugGenerateCompareImage
+from conf.config import TdFilterConfigKey
 
 class VerboseDisplayWidget(QWidget):
     ''' 弹窗显示指定图像
@@ -50,6 +51,7 @@ class VerboseDisplayWidget(QWidget):
         self.ui.list_widget.setEnabled(False)
         self.ui.list_widget.setVisible(False)
         self.ui.line_horiz_2.setVisible(False)
+        self.ui.checkbox_morphed.setVisible(False)
         self.ui.checkbox_color_keep.setVisible(False)
         self.ui.checkbox_use_final_ret_as_bg.setVisible(False)
         self.ui.line_horiz_3.setVisible(False)
@@ -57,6 +59,9 @@ class VerboseDisplayWidget(QWidget):
         self.ui.textbrowser_info.setText("Info:\n")
         self.ui.list_widget_sec.setVisible(False)
         self.ui.list_widget_sec.setEnabled(False)
+        self.ui.horizontalLayout.setStretch(0, 1)
+        self.ui.horizontalLayout.setStretch(1, 0)
+        self.ui.horizontalLayout.setStretch(2, 0)
         self.cv_verbose_dict = cv_verbose_dict
 
         # 将所有源插入 comboBox 中

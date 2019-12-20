@@ -12,7 +12,8 @@ import gui.resources.resources
 from gui.app_widgets.preprocess_display_widget import PreprocessDisplayWidget
 from gui.app_widgets.extract_display_widget import ExtractDisplayWidget
 from gui.app_widgets.merging_display_widget import MergeDisplayWidget
-from conf.config import TdConfig, AppSettings
+from conf.config import TdConfig, AppSettings, TdExtractConfigKey
+from tdlib.extraction import ExtractDirection
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class AppMainWindow(QMainWindow):
         self.extract_display_widget = None
         self.merging_display_widget = None
         self.ldp_display_widget = None
-
+        # 建立主窗体
         self.ui = ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon(':/images/icon.png'))
@@ -50,7 +51,7 @@ class AppMainWindow(QMainWindow):
         self.createMergeDisplayWidget()
         self.createIdentifyWithFeatureDisplayWidget()
 
-        self.onActionPreprocessing()
+        self.onActionIdentifyWithFeature()
         self.updateStatusBar()
         return
 
@@ -65,6 +66,7 @@ class AppMainWindow(QMainWindow):
         self.ui.action_extract_connect_domain.triggered.connect(self.onActionExtratConnectDomain)
         self.ui.action_merging_text_line.triggered.connect(self.onActionMergingTextLine)
         self.ui.action_identify_with_feature.triggered.connect(self.onActionIdentifyWithFeature)
+        self.ui.action_load_config.triggered.connect(self.onActionLoadConf)
         return
 
     def initResources(self):
@@ -93,22 +95,20 @@ class AppMainWindow(QMainWindow):
     def updateStatusBar(self):
         ''' 更新状态栏信息
         '''
-        self.statusbar_label_confile.setText(AppSettings.config_file_path)
+        self.statusbar_label_confile.setText(AppSettings.config_file_path.split('/')[-1])
         self.statusbar_label_curstage.setText(AppSettings.curstage)
 
     def onActionAbout(self):
-        '''
-        About 响应函数
+        ''' About 响应函数
         '''
         QMessageBox.about(self, "About", self.strings["ABOUT"])
         return
 
     def onActionOpen(self):
-        '''
-        Open 响应函数
+        ''' Open 响应函数
         '''
         fname, _ = QFileDialog.getOpenFileName(self, "Open file", \
-                                        '~', "Image files (*.jpg *.gif)")
+                                        '~', "Image files (*.jpg *.gif *.png)")
         if fname == '':
             return
         input_image = QImage(fname).convertToFormat(QImage.Format_RGB32)
@@ -120,6 +120,23 @@ class AppMainWindow(QMainWindow):
         OpenCurrentControlPanel 响应函数
         '''
         self.ui.display_widget.openControlPanel()
+        return
+
+    def onActionLoadConf(self):
+        ''' 载入配置文件
+        '''
+        fname, _ = QFileDialog.getOpenFileName(self, "Open Config file", \
+                                        '~', "config files (*.yaml)")
+        AppSettings.config_file_path = fname
+        if self.preprocess_display_widget.control_panel is not None:
+            self.preprocess_display_widget.control_panel.close()
+        if self.extract_display_widget.control_panel is not None:
+            self.extract_display_widget.control_panel.close()
+        if self.merging_display_widget.control_panel is not None:
+            self.merging_display_widget.control_panel.close()
+        if self.ldp_display_widget.control_panel is not None:
+            self.ldp_display_widget.control_panel.close()
+        self.updateStatusBar()
         return
 
     def _onlyShow(self, tgtname):
@@ -178,82 +195,112 @@ class AppMainWindow(QMainWindow):
     def createIdentifyWithFeatureDisplayWidget(self):
         ''' 创建 IdentifyWithFeature 窗体
         '''
+        if self.ldp_display_widget is None:
+            self.ldp_display_widget = MergeDisplayWidget(self)
+            self.ldp_display_widget.setSizePolicy(self.default_display_widget.sizePolicy())
+            self.ldp_display_widget.setObjectName("feature_display_widget")
+            self.ldp_display_widget.hide()
 
     def onActionPreprocessing(self):
-        '''
-        Stage->Preprocessing 菜单响应函数，将预处理窗口设置为当前窗口
+        ''' Stage->Preprocessing 菜单响应函数，将预处理窗口设置为当前窗口
         '''
         self.createPrepDisplayWidget()
         old_display_widget_item = self.ui.verticalLayout.itemAt(0)
         self.ui.verticalLayout.removeItem(old_display_widget_item)
         self.ui.verticalLayout.insertWidget(0, self.preprocess_display_widget)
         self.ui.display_widget = self.preprocess_display_widget
+        self.statusbar_label_curstage.setText("preprocessing")
         self._onlyShow("prep")
         return
 
     def onActionExtratConnectDomain(self):
-        '''
-        Stage->Extract Connect Domain 菜单响应函数，将连通域提取窗口设置为当前窗口
+        ''' Stage->Extract Connect Domain 菜单响应函数，将连通域提取窗口设置为当前窗口
         '''
         self.createExtractDisplayWidget()
         old_display_widget_item = self.ui.verticalLayout.itemAt(0)
         self.ui.verticalLayout.removeItem(old_display_widget_item)
         self.ui.verticalLayout.insertWidget(0, self.extract_display_widget)
         self.ui.display_widget = self.extract_display_widget
+        self.statusbar_label_curstage.setText("extract")
         self._onlyShow("extract")
         return
 
     def onActionMergingTextLine(self):
-        '''
-        Stage->Merging Text Line 菜单响应函数，将文本行合并窗口设置为当前窗口
+        ''' Stage->Merging Text Line 菜单响应函数，将文本行合并窗口设置为当前窗口
         '''
         self.createMergeDisplayWidget()
         old_display_widget_item = self.ui.verticalLayout.itemAt(0)
         self.ui.verticalLayout.removeItem(old_display_widget_item)
         self.ui.verticalLayout.insertWidget(0, self.merging_display_widget)
         self.ui.display_widget = self.merging_display_widget
+        self.statusbar_label_curstage.setText("merging")
         self._onlyShow("merge")
         return
 
     def onActionIdentifyWithFeature(self):
+        ''' Stage->Identify with Feature 菜单响应函数，将特征鉴别窗口设置为当前窗口
         '''
-        Stage->Identify with Feature 菜单响应函数，将特征鉴别窗口设置为当前窗口
-        '''
-        self.ui.action_preprocessing.setChecked(False)
-        self.ui.action_extract_connect_domain.setChecked(False)
-        self.ui.action_merging_text_line.setChecked(False)
-        self.ui.action_identify_with_feature.setChecked(True)
+        self.createIdentifyWithFeatureDisplayWidget()
+        old_display_widget_item = self.ui.verticalLayout.itemAt(0)
+        self.ui.verticalLayout.removeItem(old_display_widget_item)
+        self.ui.verticalLayout.insertWidget(0, self.ldp_display_widget)
+        self.ui.display_widget = self.ldp_display_widget
+        self.statusbar_label_curstage.setText("location")
+        self._onlyShow("feature")
         return
 
-    def onActionExtractorRequireData(self, chnls):
+    def onActionExtractorRequireData(self, srcs, extconf):
         ''' 获取 Extracter 所需的数据
+        Args:
+            srcs 源图像
+            extconf 配置信息
         '''
-        config = TdConfig(AppSettings.config_file_path).getPrepConfig() if self.preprocess_display_widget.control_panel is None \
-                                            else self.preprocess_display_widget.control_panel.getConfiguration()
+        # 设置预处理
+        config = TdConfig(AppSettings.config_file_path).getPrepConfig() \
+                 if self.preprocess_display_widget.control_panel is None else \
+                 self.preprocess_display_widget.control_panel.getConfiguration()
         self.preprocess_display_widget.preprocesser.setConfig(config)
 
-        datas = []
-        if "Gray" in chnls:
-            datas.append({"name":"Gray",
-                          "image":self.preprocess_display_widget.preprocesser.gray_img_preped})
-        if "Blue Channel" in chnls:
-            datas.append({"name":"Blue Channel",
-                          "image":self.preprocess_display_widget.preprocesser.blue_channel_preped})
-        if "Red Channel" in chnls:
-            datas.append({"name":"Red Channel",
-                          "image":self.preprocess_display_widget.preprocesser.red_channel_preped})
-        if "Green Channel" in chnls:
-            datas.append({"name":"Green Channel",
-                          "image":self.preprocess_display_widget.preprocesser.green_channel_preped})
-        self.extract_display_widget.input_images = datas
+        # 初始化配置
+        posi_extconf = extconf.copy()
+        nega_extconf = extconf.copy()
+        posi_extconf[TdExtractConfigKey.DIRECTION] = ExtractDirection.Positive
+        nega_extconf[TdExtractConfigKey.DIRECTION] = ExtractDirection.Negitive
 
-        msg = "Data is fed for extractor. channels:%s."%chnls
+        # 准备预处理后图像
+        images, image = [], []
+        for src in srcs:
+            image.clear()
+            grayname, chartype = src.split('.')
+            if grayname == "Gray":
+                ret = self.preprocess_display_widget.preprocesser.ret_gray
+            elif grayname == "Red":
+                ret = self.preprocess_display_widget.preprocesser.ret_red
+            elif grayname == "Green":
+                ret = self.preprocess_display_widget.preprocesser.ret_green
+            elif grayname == "Blue":
+                ret = self.preprocess_display_widget.preprocesser.ret_blue
+            else:
+                ret = None
+
+            if chartype == "Both" or chartype == "Black":
+                image.append({'name':"%s.Black"%grayname,
+                              'image':ret[1],
+                              'conf':posi_extconf})
+            if chartype == "Both" or chartype == "Bright":
+                image.append({'name':"%s.Bright"%grayname,
+                              'image':ret[2],
+                              'conf':nega_extconf})
+            images.extend(image.copy())
+
+        self.extract_display_widget.input_images = images
+        msg = "Data is fed for extractor"
         logger.info(msg)
 
     def onActionMergerRequireData(self):
         ''' 获取 Merger 所需的数据
         '''
-        self.merging_display_widget.input_image = self.extract_display_widget.last_result
-        self.merging_display_widget.color_image = self.preprocess_display_widget.preprocesser.color_img
+        self.merging_display_widget.input_image = self.extract_display_widget.getResult()
+        self.merging_display_widget.color_image = self.preprocess_display_widget.preprocesser.rgb_image
         msg = "Data is fed for merger"
         logger.info(msg)

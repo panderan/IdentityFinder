@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>587</width>
-    <height>837</height>
+    <width>583</width>
+    <height>671</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
         </size>
        </property>
        <property name="text">
-        <string>MSER Params</string>
+        <string> MSER Params</string>
        </property>
       </widget>
      </item>
@@ -212,7 +212,7 @@
       </widget>
      </item>
      <item row="4" column="0">
-      <widget class="QLabel" name="label_mser_channels">
+      <widget class="QLabel" name="label_mser_srcs">
        <property name="minimumSize">
         <size>
          <width>180</width>
@@ -220,7 +220,7 @@
         </size>
        </property>
        <property name="text">
-        <string>Channels :</string>
+        <string>Srcs :</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -228,102 +228,126 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <layout class="QHBoxLayout" name="layout_channels_options">
+      <layout class="QHBoxLayout" name="layout_mser_srcs" stretch="0,1,0,1,1,1">
        <item>
-        <widget class="QCheckBox" name="checkbox_mser_gray">
-         <property name="text">
-          <string>Gray</string>
+        <widget class="QLabel" name="label_mser_srcs_gray">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkbox_mser_red">
          <property name="text">
-          <string>Red</string>
+          <string>Gray:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkbox_mser_green">
+        <widget class="QComboBox" name="combobox_mser_srcs_gray">
+         <item>
+          <property name="text">
+           <string>Gray</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Red</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Green</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Blue</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_mser_srcs_chartype">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
-          <string>Green</string>
+          <string>CharType:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkbox_mser_blue">
+        <widget class="QComboBox" name="combobox_mser_srcs_chartype">
+         <item>
+          <property name="text">
+           <string>Both</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Black</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Bright</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_mser_srcs_add">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">margin:0px;</string>
+         </property>
          <property name="text">
-          <string>Blue</string>
+          <string>Add</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_mser_srcs_del">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">margin:0px;</string>
+         </property>
+         <property name="text">
+          <string>Del</string>
          </property>
         </widget>
        </item>
       </layout>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_mser_debug">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Debug :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="1">
-      <widget class="QCheckBox" name="checkbox_mser_debug_enable">
-       <property name="text">
-        <string>Debug Enable</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_mser_direction">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Direction :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
      </item>
      <item row="5" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QCheckBox" name="checkbox_mser_direction_positive">
-         <property name="text">
-          <string>Positive</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkbox_mser_direction_negative">
-         <property name="text">
-          <string>Negative</string>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QListWidget" name="listWidget"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="checkbox_mser_show_verbose">
+       <property name="text">
+        <string>Show Verbose</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QCheckBox" name="checkbox_morph_verbose">
+       <property name="text">
+        <string>Show Morph Verbose</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -345,7 +369,7 @@
         </size>
        </property>
        <property name="text">
-        <string>    Filter Params</string>
+        <string> Filter Params</string>
        </property>
       </widget>
      </item>
@@ -1004,251 +1028,6 @@
          </property>
          <property name="checked">
           <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="9" column="1">
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="0">
-      <widget class="QLabel" name="label">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>    SWT Filter Params</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0">
-      <widget class="QLabel" name="label_filter_swt_filter_enable">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>SWT Filter Enable :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="1">
-      <widget class="QCheckBox" name="checkbox_filter_swt_filter_enable">
-       <property name="text">
-        <string>SWT Filter Enable</string>
-       </property>
-      </widget>
-     </item>
-     <item row="12" column="0">
-      <widget class="QLabel" name="label_filter_swt_total_points">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Total Points:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="12" column="1">
-      <widget class="QSpinBox" name="spinbox_filter_swt_total_points">
-       <property name="minimumSize">
-        <size>
-         <width>150</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="value">
-        <number>30</number>
-       </property>
-      </widget>
-     </item>
-     <item row="13" column="0">
-      <widget class="QLabel" name="label_filter_swt_mode_lim">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Mode Lim :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="13" column="1">
-      <widget class="QDoubleSpinBox" name="dspinbox_filter_swt_mode_lim">
-       <property name="minimumSize">
-        <size>
-         <width>150</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="value">
-        <double>1.500000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="14" column="0">
-      <widget class="QLabel" name="label_filter_swt_mean_lim">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Mean Lim :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="14" column="1">
-      <layout class="QHBoxLayout" name="layout_filter_swt_mean_lim">
-       <item>
-        <widget class="QLabel" name="label_filter_swt_mean_high">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>High:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="dspinbox_filter_swt_mean_high">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="value">
-          <double>5.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_filter_swt_mean_low">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Low:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="dspinbox_filter_swt_mean_low">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="value">
-          <double>2.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="15" column="0">
-      <widget class="QLabel" name="label_filter_swt_std_lim">
-       <property name="minimumSize">
-        <size>
-         <width>180</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Std Lim :</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="15" column="1">
-      <layout class="QHBoxLayout" name="layout_filter_swt_std_lim">
-       <item>
-        <widget class="QLabel" name="label_filter_swt_std_high">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>High:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="dspinbox_filter_swt_std_high">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="value">
-          <double>2.500000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_filter_swt_std_low">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Low:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="dspinbox_filter_swt_std_low">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="value">
-          <double>0.500000000000000</double>
          </property>
         </widget>
        </item>

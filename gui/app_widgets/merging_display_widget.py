@@ -11,7 +11,8 @@ from tdlib.location import TdMergingTextLine, threshold_of_position_ratio_for_id
 from gui.app_widgets.basic_display_widget import BasicDisplayWidget
 from gui.app_widgets.merging_control_widget import MergeDisplayCtrlWidget
 from gui.app_widgets.verbose_show_widget import VerboseDisplayWidget
-from conf.config import TdConfig
+from conf.config import TdConfig, AppSettings, TdMergeTLConfigKey
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,8 @@ class MergeDisplayWidget(BasicDisplayWidget):
         self.merger = TdMergingTextLine()
         self.cur_config = {}
         self.dr_widget = None
-        self.input_image = None
+        self.input_image = [] 
+        self.output_data = [] 
         self.color_image = None
         return
 
@@ -44,32 +46,40 @@ class MergeDisplayWidget(BasicDisplayWidget):
         ''' 进行预处理
         '''
         # 获取参数，进行预处理
-        megconf = self.control_panel.getConfiguration() if self.control_panel is not None \
-                  else TdConfig().getMergeTLConfig()
-        fltconf = self.control_panel.getConfiguration(flag=1) if self.control_panel is not None \
-                    else TdConfig().getFilterConfig("morph")
+        megconf = self.control_panel.getConfiguration() \
+                  if self.control_panel is not None else \
+                  TdConfig(AppSettings.config_file_path).getMergeTLConfig()
         self.merger.setConfig(megconf)
-        self.filter.setConfig(fltconf)
 
+        # 获取输入数据
         logger.info("Merger require datas.")
         self.requireData.emit()
         logger.info("Merger tell data was recevied")
 
         # 合并文本行
-        self.merger.debug.enableDebug(self.input_image.shape)
-        self.merger.debug.setBgColorImage(self.color_image)
+        self.output_data, verboses_data = [], []
         self.merger.get_position_ratio_threshold = threshold_of_position_ratio_for_idcard
-        regions = self.morpher.morph_operation(self.input_image, self.filter)
-        tlregions = self.merger.mergeTextLine(regions)
+        for name, binarized_image, regions in self.input_image:
+            if megconf[TdMergeTLConfigKey.VERBOSE]:
+                self.merger.debug.enableDebug(self.color_image.shape)
+                self.merger.debug.setBgColorImage(self.color_image)
+            tl_regions = self.merger.mergeTextLine(regions)
+            self.output_data.append((name, binarized_image, tl_regions))
+            if megconf[TdMergeTLConfigKey.VERBOSE]:
+                verboses_data.append(deepcopy(self.merger.debug))
 
         # 显示处理结果
-        if megconf['show_verbose'] and self.merger.debug is not None:
+        if megconf[TdMergeTLConfigKey.VERBOSE] and self.merger.debug is not None:
             if self.dr_widget is None:
                 self.dr_widget = VerboseDisplayWidget()
-            self.dr_widget.setMergeVerboseData(self.merger.debug)
-            self.dr_widget.show()
+            for data in verboses_data:
+                self.dr_widget.setMergeVerboseData(data)
+                self.dr_widget.show()
+
+        # 绘制中间结果
         result_image = self.color_image.copy()
-        result_image = TdMergingTextLine.drawRegions(result_image, (255, 255, 255), cv2.LINE_4, tlregions)
+        for item in self.output_data:
+            result_image = TdMergingTextLine.drawRegions(result_image, (255, 255, 255), cv2.LINE_4, item[-1])
         self.setDisplayCvImage(result_image)
         return
 

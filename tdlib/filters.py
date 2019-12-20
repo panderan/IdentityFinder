@@ -14,24 +14,47 @@ import math
 from enum import Enum
 import cv2
 import numpy as np
-from tdlib.swt import swt
+from conf.config import TdFilterConfigKey, TdFilterCheckType
 
 
 logger = logging.getLogger(__name__)
 
 
-class TdFilterCheckType(Enum):
+
+class TdFilterDebugData:
+    ''' Debug 数据
     '''
-    需要检查的类型
-    '''
-    AREA = 1
-    WIDTH = 2
-    HEIGHT = 4
-    PERIMETER = 8
-    ASPECTRATIO = 16
-    OCCUPIEDRATIO = 32
-    COMPACTNESS = 64
-    SWT = 128
+    def __init__(self):
+        self.data = []
+        self.enable = False
+
+    def initDebugData(self):
+        ''' 初始化 Debug 数据
+        '''
+        self.data = {"area":None,
+                     "width":None,
+                     "height":None,
+                     "perimeter":None,
+                     "aspect_ratio":None,
+                     "occupation_ratio":None,
+                     "compactness":None}
+
+    def setEnable(self, flag):
+        ''' 注释
+        '''
+        self.enable = bool(flag)
+
+    def fillDebugData(self, key, value, lim):
+        ''' 填充 Debug 数据
+        '''
+        if self.enable:
+            self.data[key] = {"value":value, "lim":lim, "result":True}
+
+    def markDebugDataResult(self, key, flag=False):
+        ''' 修改 Debug 数据中的 Result 值
+        '''
+        if self.enable and self.data[key] is not None:
+            self.data[key]['result'] = flag
 
 
 class TdFilter:
@@ -58,8 +81,7 @@ class TdFilter:
 
         self.canny_image = None
         self.gray_image = gray_image
-        self.debug_enable = True
-        self.debug_data = {}
+        self.debug = TdFilterDebugData()
 
     def validate(self, region, bbox):
         ''' 验证单个选区是否满足条件
@@ -70,106 +92,59 @@ class TdFilter:
             True 满足
             False 不满足
         '''
-        self.initDebugData()
+        self.debug.initDebugData()
 
         # 面积过滤
-        if self.flag & TdFilterCheckType.AREA.value:
-            self.fillDebugData("area", bbox[2]*bbox[3], self.area_lim)
+        if  TdFilterCheckType.AREA in self.flag:
+            self.debug.fillDebugData("area", bbox[2]*bbox[3], self.area_lim)
             if bbox[2]*bbox[3] < self.area_lim:
-                self.markDebugDataResult("area", False)
+                self.debug.markDebugDataResult("area", False)
                 return False
 
         # 长宽度过滤
-        if self.flag & TdFilterCheckType.WIDTH.value:
-            self.fillDebugData("width", bbox[2], self.width_lim)
+        if  TdFilterCheckType.WIDTH in self.flag:
+            self.debug.fillDebugData("width", bbox[2], self.width_lim)
             if bbox[2] < self.width_lim[0] or bbox[2] > self.width_lim[1]:
-                self.markDebugDataResult("width", False)
+                self.debug.markDebugDataResult("width", False)
                 return False
 
-        if self.flag & TdFilterCheckType.HEIGHT.value:
-            self.fillDebugData("height", bbox[3], self.height_lim)
+        if  TdFilterCheckType.HEIGHT in self.flag:
+            self.debug.fillDebugData("height", bbox[3], self.height_lim)
             if bbox[3] < self.height_lim[0] or bbox[3] > self.height_lim[1]:
-                self.markDebugDataResult("height", False)
+                self.debug.markDebugDataResult("height", False)
                 return False
 
         # 周长
-        if self.flag & TdFilterCheckType.PERIMETER.value:
+        if  TdFilterCheckType.PERIMETER in self.flag:
             retval = self.getPerimeter(bbox)
-            self.fillDebugData("perimeter", retval, self.perimeter_lim)
+            self.debug.fillDebugData("perimeter", retval, self.perimeter_lim)
             if retval < self.perimeter_lim[0] or retval > self.perimeter_lim[1]:
-                self.markDebugDataResult("perimeter", False)
+                self.debug.markDebugDataResult("perimeter", False)
                 return False
 
         # 横纵比
-        if self.flag & TdFilterCheckType.ASPECTRATIO.value:
+        if  TdFilterCheckType.ASPECTRATIO in self.flag:
             retval = self.getAspectRatio(region)
-            self.fillDebugData("aspect_ratio", retval, self.aspect_ratio_lim)
+            self.debug.fillDebugData("aspect_ratio", retval, self.aspect_ratio_lim)
             if retval < self.aspect_ratio_lim[0] or retval > self.aspect_ratio_lim[1]:
-                self.markDebugDataResult("aspect_ratio", False)
+                self.debug.markDebugDataResult("aspect_ratio", False)
                 return False
 
         # 占用率
-        if self.flag & TdFilterCheckType.OCCUPIEDRATIO.value:
+        if  TdFilterCheckType.OCCUPIEDRATIO in self.flag:
             retval = self.getOccurpiedRatio(region, bbox)
-            self.fillDebugData("occupation_ratio", retval, self.occupation_lim)
+            self.debug.fillDebugData("occupation_ratio", retval, self.occupation_lim)
             if retval < self.occupation_lim[0] or retval > self.occupation_lim[1]:
-                self.markDebugDataResult("occupation_ratio", False)
+                self.debug.markDebugDataResult("occupation_ratio", False)
                 return False
 
         # 紧密度
-        if self.flag & TdFilterCheckType.COMPACTNESS.value:
+        if  TdFilterCheckType.COMPACTNESS in self.flag:
             retval = self.getCompactness(region, bbox)
-            self.fillDebugData("compactness", retval, self.compactness_lim)
+            self.debug.fillDebugData("compactness", retval, self.compactness_lim)
             if retval < self.compactness_lim[0] or retval > self.compactness_lim[1]:
-                self.markDebugDataResult("compactness", False)
+                self.debug.markDebugDataResult("compactness", False)
                 return False
-
-        if self.flag & TdFilterCheckType.SWT.value:
-            if self.swt is None:
-                self.swt = swt()
-                self.swt.setImage(self.gray_image)
-            stroke_widths, stroke_widths_opp = self.swt.get_strokes(bbox)
-            stroke_widths = np.append(stroke_widths, stroke_widths_opp, axis=0)
-            retval = self.swt.get_stroke_properties(stroke_widths)
-
-            total_cnt = len(stroke_widths)
-            mode, mode_cnt, mean, std, maxval, minval = retval
-
-            self.fillDebugData("swt_mode", mode, self.swt_mode)
-            if mode < self.swt_mode[0] or mode > self.swt_mode[1]:
-                self.markDebugDataResult("swt_mode", False)
-                return False
-
-            self.fillDebugData("swt_mode_cnt", mode_cnt, self.swt_mode_cnt)
-            if mode_cnt < self.swt_mode_cnt:
-                self.markDebugDataResult("swt_mode_cnt", False)
-                return False
-
-            self.fillDebugData("swt_total_cnt", total_cnt, self.swt_total_cnt)
-            if total_cnt < self.swt_total_cnt[0] or total_cnt > self.swt_total_cnt[1]:
-                self.markDebugDataResult("swt_total_cnt", False)
-                return False
-
-            self.fillDebugData("swt_mean", mean, self.swt_mean)
-            if mean < self.swt_mean[0] or mean > self.swt_mean[1]:
-                self.markDebugDataResult("swt_mean", False)
-                return False
-
-            self.fillDebugData("swt_std", std, self.swt_std)
-            if std < self.swt_std[0] or std > self.swt_std[1]:
-                self.markDebugDataResult("swt_std", False)
-                return False
-
-            self.fillDebugData("maxval", maxval, self.swt_val_range[1])
-            if maxval > self.swt_val_range[1]:
-                self.markDebugDataResult("maxval", False)
-                return False
-
-            self.fillDebugData("minval", minval, self.swt_val_range[0])
-            if minval < self.swt_val_range[0]:
-                self.markDebugDataResult("minval", False)
-                return False
-
         return True
 
     def getRealArea(self, region):
@@ -221,30 +196,32 @@ class TdFilter:
     def getCompactness(self, region, bbox):
         ''' 获取选区紧密度
         '''
-        return float(self.getRealArea(region)) / float(self.getPerimeter(bbox)**2)
+        if self.getPerimeter(bbox) > 0:
+            return float(self.getRealArea(region)) / float(self.getPerimeter(bbox)**2)
+        return 0
 
     def __setConfigItem(self, keystr, config):
         ''' 设置单个参数
         '''
         try:
-            if keystr == "flag":
-                self.flag = config['flag']
-            elif keystr == "area_lim":
-                self.area_lim = config['area_lim']
-            elif keystr == "perimeter_lim":
-                self.perimeter_lim = config['perimeter_lim']
-            elif keystr == "aspect_ratio_lim":
-                self.aspect_ratio_lim = config['aspect_ratio_lim']
-            elif keystr == "aspect_ratio_gt1":
-                self.aspect_ratio_gt1 = config['aspect_ratio_gt1']
-            elif keystr == "occupation_lim":
-                self.occupation_lim = config['occupation_lim']
-            elif keystr == "compactness_lim":
-                self.compactness_lim = config['compactness_lim']
-            elif keystr == "width_lim":
-                self.width_lim = config['width_lim']
-            elif keystr == "height_lim":
-                self.height_lim = config['height_lim']
+            if keystr is TdFilterConfigKey.FLAG:
+                self.flag = config[TdFilterConfigKey.FLAG]
+            elif keystr is TdFilterConfigKey.AREA_LIM:
+                self.area_lim = config[TdFilterConfigKey.AREA_LIM]
+            elif keystr is TdFilterConfigKey.PERIMETER_LIM:
+                self.perimeter_lim = config[TdFilterConfigKey.PERIMETER_LIM]
+            elif keystr is TdFilterConfigKey.ASPECT_RATIO_LIM:
+                self.aspect_ratio_lim = config[TdFilterConfigKey.ASPECT_RATIO_LIM]
+            elif keystr is TdFilterConfigKey.ASPECT_RATIO_GT1:
+                self.aspect_ratio_gt1 = config[TdFilterConfigKey.ASPECT_RATIO_GT1]
+            elif keystr is TdFilterConfigKey.OCCUPATION_LIM:
+                self.occupation_lim = config[TdFilterConfigKey.OCCUPATION_LIM]
+            elif keystr is TdFilterConfigKey.COMPACTNESS_LIM:
+                self.compactness_lim = config[TdFilterConfigKey.COMPACTNESS_LIM]
+            elif keystr is TdFilterConfigKey.WIDTH_LIM:
+                self.width_lim = config[TdFilterConfigKey.WIDTH_LIM]
+            elif keystr is TdFilterConfigKey.HEIGHT_LIM:
+                self.height_lim = config[TdFilterConfigKey.HEIGHT_LIM]
             else:
                 pass
         except KeyError:
@@ -254,30 +231,30 @@ class TdFilter:
     def setConfig(self, config):
         ''' 设置参数
         '''
-        self.__setConfigItem("flag", config)
-        self.__setConfigItem("area_lim", config)
-        self.__setConfigItem("perimeter_lim", config)
-        self.__setConfigItem("aspect_ratio_lim", config)
-        self.__setConfigItem("aspect_ratio_gt1", config)
-        self.__setConfigItem("occupation_lim", config)
-        self.__setConfigItem("compactness_lim", config)
-        self.__setConfigItem("width_lim", config)
-        self.__setConfigItem("height_lim", config)
+        self.__setConfigItem(TdFilterConfigKey.FLAG, config)
+        self.__setConfigItem(TdFilterConfigKey.AREA_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.PERIMETER_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.ASPECT_RATIO_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.ASPECT_RATIO_GT1, config)
+        self.__setConfigItem(TdFilterConfigKey.OCCUPATION_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.COMPACTNESS_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.WIDTH_LIM, config)
+        self.__setConfigItem(TdFilterConfigKey.HEIGHT_LIM, config)
         self.printParams()
         return self
 
     def printParams(self):
         ''' 打印当前参数
         '''
-        params = {"flag": self.flag,
-                  "area_lim": self.area_lim,
-                  "perimeter_lim": self.perimeter_lim,
-                  "aspect_ratio_lim": self.aspect_ratio_lim,
-                  "aspect_ratio_gt1": self.aspect_ratio_gt1,
-                  "occupation_lim": self.occupation_lim,
-                  "compactness_lim": self.compactness_lim,
-                  "width_lim": self.width_lim,
-                  "height_lim": self.height_lim}
+        params = {TdFilterConfigKey.FLAG.name: self.flag,
+                  TdFilterConfigKey.AREA_LIM.name: self.area_lim,
+                  TdFilterConfigKey.PERIMETER_LIM.name: self.perimeter_lim,
+                  TdFilterConfigKey.ASPECT_RATIO_LIM.name: self.aspect_ratio_lim,
+                  TdFilterConfigKey.ASPECT_RATIO_GT1.name: self.aspect_ratio_gt1,
+                  TdFilterConfigKey.OCCUPATION_LIM.name: self.occupation_lim,
+                  TdFilterConfigKey.COMPACTNESS_LIM.name: self.compactness_lim,
+                  TdFilterConfigKey.WIDTH_LIM.name: self.width_lim,
+                  TdFilterConfigKey.HEIGHT_LIM.name: self.height_lim}
         msg = "Filter Params %s" % params
         logger.info(msg)
 
@@ -297,31 +274,6 @@ class TdFilter:
         else:
             self.__gray_image = None
             self.canny_image = None
-
-    def initDebugData(self):
-        ''' 初始化 Debug 数据
-        '''
-        self.debug_data = {"area":None,
-                           "width":None,
-                           "height":None,
-                           "perimeter":None,
-                           "aspect_ratio":None,
-                           "occupation_ratio":None,
-                           "compactness":None}
-
-    def fillDebugData(self, key, value, lim):
-        ''' 填充 Debug 数据
-        '''
-        if self.debug_enable:
-            self.debug_data[key] = {"value":value, "lim":lim, "result":True}
-        else:
-            self.debug_data[key] = None
-
-    def markDebugDataResult(self, key, flag=False):
-        ''' 修改 Debug 数据中的 Result 值
-        '''
-        if self.debug_enable and self.debug_data[key] is not None:
-            self.debug_data[key]['result'] = flag
 
     def validateBoxPoints(self, pbox):
         ''' 验证单个选区是否满足条件
@@ -346,9 +298,11 @@ class TdFilter:
         '''
         cntr_x, cntr_y = robox[0]
         width, height = robox[1]
-        bbox = (cntr_x-width/2, cntr_y-height/2, width, height)
-        self.flag &= (TdFilterCheckType.AREA.value
-                      | TdFilterCheckType.WIDTH.value
-                      | TdFilterCheckType.HEIGHT.value
-                      | TdFilterCheckType.PERIMETER.value)
+        bbox = np.int32((cntr_x-width/2, cntr_y-height/2, width, height))
+        target_check_type = [TdFilterCheckType.AREA,
+                             TdFilterCheckType.WIDTH,
+                             TdFilterCheckType.HEIGHT,
+                             TdFilterCheckType.PERIMETER]
+        new_flag = [v for v in self.flag if v in target_check_type]
+        self.flag = new_flag
         return self.validate(None, bbox)

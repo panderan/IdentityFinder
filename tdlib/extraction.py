@@ -7,6 +7,7 @@ import logging
 from enum import Enum
 import cv2
 import numpy as np
+from conf.config import TdExtractConfigKey
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,51 @@ class ExtractDirection(Enum):
     Negitive = 2
 
 
+class TdExtractDebugData:
+    ''' Debug数据
+    '''
+    def __init__(self):
+        self.data = [{
+            'name': None,
+            'result': None,
+            'regions': [{
+                'points': [],
+                'box': [],
+                'flt_params': {}
+            }]
+        }]
+        self.enable = False
+
+    def setEnable(self, flag):
+        ''' 注释
+        '''
+        self.enable = bool(flag)
+
+    def initDebugData(self):
+        ''' 重置 Debug
+        '''
+        self.data = []
+
+    def newImage(self, name):
+        ''' 注释
+        '''
+        if self.enable:
+            self.data.append({'name':None, 'reuslt':None, 'regions':[]})
+            self.data[-1]['name'] = name
+
+    def addLastResult(self, image):
+        ''' 注释
+        '''
+        if self.enable:
+            self.data[-1]['result'] = image.copy()
+
+    def addLastImageRegion(self, points, box, flt_params):
+        ''' 注释
+        '''
+        if self.enable:
+            self.data[-1]['regions'].append({"points":points.copy(), "box":box.copy(), "flt_params": flt_params.copy()})
+
+
 class TdExtractConnectDomain:
     ''' MSER 连通域提取类
     从一幅灰度图像中提取 MSER 连通域
@@ -28,9 +74,8 @@ class TdExtractConnectDomain:
         self.min_area = 9
         self.max_area = 500
         self.variation = 0.25
-        self.direction = 1
-        self.debug_enable = True
-        self.debug_data = []
+        self.direction = None
+        self.debug = TdExtractDebugData()
 
     def extract(self, gray_image, flt=None):
         ''' 提取 MSER 连通区域
@@ -45,11 +90,11 @@ class TdExtractConnectDomain:
         self.printParams()
         region_points, region_boxes = [], []
         mser = cv2.MSER_create(_delta=self.delta, _min_area=self.min_area, _max_area=self.max_area)
-        if self.direction & ExtractDirection.Positive.value:
+        if self.direction is ExtractDirection.Positive:
             points, boxes = mser.detectRegions(gray_image)
             region_points.extend(points)
             region_boxes.extend(boxes)
-        if self.direction & ExtractDirection.Negitive.value:
+        if self.direction is ExtractDirection.Negitive:
             points, boxes = mser.detectRegions(255-gray_image)
             region_points.extend(points)
             region_boxes.extend(boxes)
@@ -57,14 +102,9 @@ class TdExtractConnectDomain:
         retpoints, retboxes = [], []
         if flt is not None:
             flt.gray_image = gray_image
-            if self.debug_enable:
-                self.debug_data.append({"regions":[]})
             for (points, box) in zip(region_points, region_boxes):
                 ret = flt.validate(points, box)
-                if self.debug_enable:
-                    cnt = len(self.debug_data) - 1
-                    item = {"points":points.copy(), "box":box.copy(), "flt_params": flt.debug_data.copy()}
-                    self.debug_data[cnt]["regions"].append(item)
+                self.debug.addLastImageRegion(points, box, flt.debug.data)
                 if ret:
                     retpoints.append(points)
                     retboxes.append(box)
@@ -84,6 +124,7 @@ class TdExtractConnectDomain:
             rect_img 在原图中用矩形标出候选区域图像
             binarized 以背景图像为0，提取的连通域为255 的二值图像
         '''
+        self.debug.newImage(gray_image_dict["name"])
         gray_image = gray_image_dict["image"]
         rect_image = gray_image.copy()
         binarized = np.zeros_like(gray_image)
@@ -91,11 +132,7 @@ class TdExtractConnectDomain:
         for i, box in enumerate(bboxes):
             rect_image = cv2.rectangle(rect_image, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (255, 0, 0))
             binarized[msers[i][:, 1], msers[i][:, 0]] = 255
-
-        if self.debug_enable:
-            self.debug_data[len(self.debug_data)-1]["name"] = gray_image_dict["name"]
-            self.debug_data[len(self.debug_data)-1]["result"] = binarized.copy()
-
+        self.debug.addLastResult(binarized)
         return rect_image, binarized
 
     def extract_with_labels_for_images(self, gray_images, flt=None):
@@ -106,9 +143,11 @@ class TdExtractConnectDomain:
         Returns:
             binarized 以背景图像为0，提取的连通域为255 的二值图像
         '''
-        self.initDebugData()
+        self.debug.initDebugData()
         ret_binarized = None
         for gray_image_dict in gray_images:
+            conf = gray_image_dict['conf']
+            self.setConfig(conf)
             _, binarized = self.extract_with_labels(gray_image_dict, flt)
             if ret_binarized is None:
                 ret_binarized = binarized.copy()
@@ -116,20 +155,20 @@ class TdExtractConnectDomain:
                 ret_binarized[binarized > 128] = binarized[binarized > 128]
         return ret_binarized
 
-    def __setConfigItem(self, keystr, config):
+    def __setConfigItem(self, key, config):
         ''' 设置单个值
         '''
         try:
-            if keystr == "delta":
-                self.delta = config["delta"]
-            elif keystr == "min_area":
-                self.min_area = config["min_area"]
-            elif keystr == "max_area":
-                self.max_area = config["max_area"]
-            elif keystr == "variation":
-                self.variation = config["variation"]
-            elif keystr == "direction":
-                self.direction = config["direction"]
+            if key is TdExtractConfigKey.DELTA:
+                self.delta = config[TdExtractConfigKey.DELTA]
+            elif key is TdExtractConfigKey.AREA_MIN:
+                self.min_area = config[TdExtractConfigKey.AREA_MIN]
+            elif key is TdExtractConfigKey.AREA_MAX:
+                self.max_area = config[TdExtractConfigKey.AREA_MAX]
+            elif key is TdExtractConfigKey.VARIATION:
+                self.variation = config[TdExtractConfigKey.VARIATION]
+            elif key is TdExtractConfigKey.DIRECTION:
+                self.direction = config[TdExtractConfigKey.DIRECTION]
             else:
                 pass
         except KeyError:
@@ -141,11 +180,11 @@ class TdExtractConnectDomain:
         '''
         if config is None:
             return
-        self.__setConfigItem("delta", config)
-        self.__setConfigItem("min_area", config)
-        self.__setConfigItem("max_area", config)
-        self.__setConfigItem("variation", config)
-        self.__setConfigItem("direction", config)
+        self.__setConfigItem(TdExtractConfigKey.DELTA, config)
+        self.__setConfigItem(TdExtractConfigKey.AREA_MIN, config)
+        self.__setConfigItem(TdExtractConfigKey.AREA_MAX, config)
+        self.__setConfigItem(TdExtractConfigKey.VARIATION, config)
+        self.__setConfigItem(TdExtractConfigKey.DIRECTION, config)
         return
 
     def printParams(self):
@@ -158,8 +197,3 @@ class TdExtractConnectDomain:
                   "direction": self.direction}
         msg = "Extract Params %s" % params
         logger.info(msg)
-
-    def initDebugData(self):
-        ''' 重置 Debug
-        '''
-        self.debug_data = []

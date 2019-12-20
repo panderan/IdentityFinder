@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui/ui/verbose_show.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.0
+# Created by: PyQt5 UI code generator 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -13,10 +13,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_VerboseDisplay(object):
     def setupUi(self, VerboseDisplay):
         VerboseDisplay.setObjectName("VerboseDisplay")
-        VerboseDisplay.resize(1028, 597)
+        VerboseDisplay.resize(1078, 838)
         self.horizontalLayout = QtWidgets.QHBoxLayout(VerboseDisplay)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.widget_display = QtWidgets.QWidget(VerboseDisplay)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.widget_display.sizePolicy().hasHeightForWidth())
+        self.widget_display.setSizePolicy(sizePolicy)
         self.widget_display.setObjectName("widget_display")
         self.horizontalLayout.addWidget(self.widget_display)
         self.line_vertical_1 = QtWidgets.QFrame(VerboseDisplay)
@@ -25,6 +30,7 @@ class Ui_VerboseDisplay(object):
         self.line_vertical_1.setObjectName("line_vertical_1")
         self.horizontalLayout.addWidget(self.line_vertical_1)
         self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -72,23 +78,27 @@ class Ui_VerboseDisplay(object):
         self.horizontalLayout_2.addLayout(self.verticalLayout)
         self.verticalLayout_3.addLayout(self.horizontalLayout_2)
         self.line_horiz_2 = QtWidgets.QFrame(VerboseDisplay)
+        self.line_horiz_2.setMaximumSize(QtCore.QSize(410, 16777215))
         self.line_horiz_2.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_horiz_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_horiz_2.setObjectName("line_horiz_2")
         self.verticalLayout_3.addWidget(self.line_horiz_2)
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.checkbox_use_final_ret_as_bg = QtWidgets.QCheckBox(VerboseDisplay)
-        self.checkbox_use_final_ret_as_bg.setMinimumSize(QtCore.QSize(150, 0))
-        self.checkbox_use_final_ret_as_bg.setMaximumSize(QtCore.QSize(150, 16777215))
-        self.checkbox_use_final_ret_as_bg.setObjectName("checkbox_use_final_ret_as_bg")
-        self.horizontalLayout_3.addWidget(self.checkbox_use_final_ret_as_bg)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.checkbox_color_keep = QtWidgets.QCheckBox(VerboseDisplay)
         self.checkbox_color_keep.setMinimumSize(QtCore.QSize(150, 0))
         self.checkbox_color_keep.setMaximumSize(QtCore.QSize(150, 16777215))
         self.checkbox_color_keep.setObjectName("checkbox_color_keep")
-        self.horizontalLayout_3.addWidget(self.checkbox_color_keep)
-        self.verticalLayout_3.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_2.addWidget(self.checkbox_color_keep)
+        self.checkbox_use_final_ret_as_bg = QtWidgets.QCheckBox(VerboseDisplay)
+        self.checkbox_use_final_ret_as_bg.setMinimumSize(QtCore.QSize(150, 0))
+        self.checkbox_use_final_ret_as_bg.setMaximumSize(QtCore.QSize(150, 16777215))
+        self.checkbox_use_final_ret_as_bg.setObjectName("checkbox_use_final_ret_as_bg")
+        self.verticalLayout_2.addWidget(self.checkbox_use_final_ret_as_bg)
+        self.checkbox_morphed = QtWidgets.QCheckBox(VerboseDisplay)
+        self.checkbox_morphed.setObjectName("checkbox_morphed")
+        self.verticalLayout_2.addWidget(self.checkbox_morphed)
+        self.verticalLayout_3.addLayout(self.verticalLayout_2)
         self.line_horiz_3 = QtWidgets.QFrame(VerboseDisplay)
         self.line_horiz_3.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_horiz_3.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -96,7 +106,13 @@ class Ui_VerboseDisplay(object):
         self.verticalLayout_3.addWidget(self.line_horiz_3)
         self.textbrowser_info = QtWidgets.QTextBrowser(VerboseDisplay)
         self.textbrowser_info.setEnabled(True)
-        self.textbrowser_info.setMaximumSize(QtCore.QSize(411, 16777215))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.textbrowser_info.sizePolicy().hasHeightForWidth())
+        self.textbrowser_info.setSizePolicy(sizePolicy)
+        self.textbrowser_info.setMinimumSize(QtCore.QSize(0, 0))
+        self.textbrowser_info.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.textbrowser_info.setObjectName("textbrowser_info")
         self.verticalLayout_3.addWidget(self.textbrowser_info)
         self.verticalLayout_3.setStretch(0, 5)
@@ -111,8 +127,9 @@ class Ui_VerboseDisplay(object):
         _translate = QtCore.QCoreApplication.translate
         VerboseDisplay.setWindowTitle(_translate("VerboseDisplay", "Verbose Result"))
         self.label_sources.setText(_translate("VerboseDisplay", "Sources:"))
-        self.checkbox_use_final_ret_as_bg.setText(_translate("VerboseDisplay", "Use Final Ret as BG"))
         self.checkbox_color_keep.setText(_translate("VerboseDisplay", "Color Keep"))
+        self.checkbox_use_final_ret_as_bg.setText(_translate("VerboseDisplay", "Use Final Ret as BG"))
+        self.checkbox_morphed.setText(_translate("VerboseDisplay", "Morphed"))
         self.textbrowser_info.setHtml(_translate("VerboseDisplay", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"

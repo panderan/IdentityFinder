@@ -32,8 +32,9 @@ class PreprocessDisplayWidget(BasicDisplayWidget):
         ''' 进行预处理
         '''
         # 获取参数,进行预处理
-        config = self.control_panel.getConfiguration() if self.control_panel is not None \
-                 else TdConfig(AppSettings.config_file_path).getPrepConfig()
+        config = self.control_panel.getConfiguration() \
+                 if self.control_panel is not None else \
+                 TdConfig(AppSettings.config_file_path).getPrepConfig()
         self.preprocesser.setConfig(config)
         self.showVerbose(config)
 

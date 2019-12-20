@@ -117,8 +117,6 @@ class Ui_MainWindow(object):
         self.menu_file.addSeparator()
         self.menu_file.addAction(self.action_exit)
         self.menu_settings.addAction(self.action_load_config)
-        self.menu_settings.addAction(self.action_save_config)
-        self.menu_settings.addAction(self.action_preferences)
         self.menu_settings.addAction(self.action_open_current_control_panel)
         self.menu_help.addAction(self.action_about)
         self.menuStage.addAction(self.action_preprocessing)

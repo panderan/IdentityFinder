@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1028</width>
-    <height>597</height>
+    <width>1078</width>
+    <height>838</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,14 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0,0">
    <item>
-    <widget class="QWidget" name="widget_display" native="true"/>
+    <widget class="QWidget" name="widget_display" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="Line" name="line_vertical_1">
@@ -26,6 +33,9 @@
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_3" stretch="5,0,0,0,3">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMinimumSize</enum>
+     </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
@@ -122,13 +132,38 @@
      </item>
      <item>
       <widget class="Line" name="line_horiz_2">
+       <property name="maximumSize">
+        <size>
+         <width>410</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QCheckBox" name="checkbox_color_keep">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>150</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Color Keep</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QCheckBox" name="checkbox_use_final_ret_as_bg">
          <property name="minimumSize">
@@ -149,21 +184,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkbox_color_keep">
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>150</width>
-           <height>16777215</height>
-          </size>
-         </property>
+        <widget class="QCheckBox" name="checkbox_morphed">
          <property name="text">
-          <string>Color Keep</string>
+          <string>Morphed</string>
          </property>
         </widget>
        </item>
@@ -181,9 +204,21 @@
        <property name="enabled">
         <bool>true</bool>
        </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="maximumSize">
         <size>
-         <width>411</width>
+         <width>16777215</width>
          <height>16777215</height>
         </size>
        </property>
