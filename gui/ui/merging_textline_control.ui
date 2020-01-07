@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>574</width>
-    <height>341</height>
+    <height>418</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -103,6 +103,76 @@
       </widget>
      </item>
      <item row="3" column="0">
+      <widget class="QLabel" name="label_position_ratio">
+       <property name="minimumSize">
+        <size>
+         <width>220</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Position Ratio :</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QComboBox" name="combobox_position_ratio">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <item>
+          <property name="text">
+           <string>ID Card</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Car Plate</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Constant</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="dspinbox_position_ratio">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="4" column="0">
       <widget class="QLabel" name="label_overlap_ratio">
        <property name="minimumSize">
         <size>
@@ -118,8 +188,14 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <widget class="QDoubleSpinBox" name="dspinbox_overlap_ratio">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="maximum">
         <double>1.000000000000000</double>
        </property>
@@ -131,7 +207,7 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="label_distance">
        <property name="minimumSize">
         <size>
@@ -147,14 +223,20 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QDoubleSpinBox" name="dspinbox_distance">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="value">
         <double>0.000000000000000</double>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <widget class="QLabel" name="label_combined_aspect_ratio_lim">
        <property name="minimumSize">
         <size>
@@ -170,7 +252,7 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
+     <item row="6" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_copy">
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
@@ -277,7 +359,7 @@
        </item>
       </layout>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="label_strategy">
        <property name="minimumSize">
         <size>
@@ -293,7 +375,7 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QComboBox" name="combobox_strategy">
        <item>
         <property name="text">
@@ -312,12 +394,59 @@
        </item>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QCheckBox" name="checkbox_show_verbsoe">
        <property name="text">
         <string>Show Verbose</string>
        </property>
       </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_text_line_filter">
+       <property name="text">
+        <string>Text Line Filter：</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="label_tlfilter_area_lim">
+       <property name="minimumSize">
+        <size>
+         <width>220</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Area Lim :</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QSpinBox" name="spinbox_tl_area_lim">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkbox_tl_area_lim_enable">
+         <property name="text">
+          <string>Enable</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

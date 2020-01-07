@@ -11,7 +11,6 @@
 '''
 import logging
 from math import sqrt
-from enum import Enum
 import cv2
 import tdlib.common as tcomm
 from conf.config import TdPrepConfigKeys
@@ -84,7 +83,7 @@ class TdPreprocessing:
                                            self.config[TdPrepConfigKeys.OFFSET])
 
         self.debug.addImage("black chars", blackchars).addImage("bright chars", brightchars)
-        return blackchars, brightchars
+        return blackchars, brightchars, image
 
     def __setConfigItem(self, key, config):
         ''' 设置配置文件单个项目
@@ -108,6 +107,21 @@ class TdPreprocessing:
         self.__setConfigItem(TdPrepConfigKeys.OFFSET, config)
         self.__setConfigItem(TdPrepConfigKeys.DEBUG, config)
         return
+
+    def getRet(self, name):
+        ''' 根据名称返回预处理结果
+        '''
+        grayname = name.split('.')[0]
+        if grayname == "Gray":
+            return self.ret_gray
+        elif grayname == "Red":
+            return self.ret_red
+        elif grayname == "Green":
+            return self.ret_green
+        elif grayname == "Blue":
+            return self.ret_blue
+        else:
+            return None
 
     def printParams(self, msg):
         ''' 打印当前参数
@@ -141,8 +155,8 @@ class TdPreprocessing:
         '''
         self.printParams("Do preprocessing Gray")
         self.debug.clear().addImage("Gray", self.gray)
-        blackchars, brightchars = self.doPreprocessing(self.gray)
-        return self.gray, blackchars, brightchars
+        blackchars, brightchars, image = self.doPreprocessing(self.gray)
+        return self.gray, blackchars, brightchars, image
     @ret_gray.setter
     def ret_gray(self, val):
         pass
@@ -153,8 +167,8 @@ class TdPreprocessing:
         '''
         self.printParams("Do preprocessing Red Channel")
         self.debug.clear().addImage("Red", self.red)
-        blackchars, brightchars = self.doPreprocessing(self.red)
-        return self.red, blackchars, brightchars
+        blackchars, brightchars, image = self.doPreprocessing(self.red)
+        return self.red, blackchars, brightchars, image
     @ret_red.setter
     def ret_red(self, val):
         pass
@@ -163,10 +177,10 @@ class TdPreprocessing:
     def ret_green(self):
         ''' 获取绿色通道图像的预处理结果
         '''
-        self.printParams("Do preprocessing Red Channel")
+        self.printParams("Do preprocessing Green Channel")
         self.debug.clear().addImage("Green", self.green)
-        blackchars, brightchars = self.doPreprocessing(self.green)
-        return self.green, blackchars, brightchars
+        blackchars, brightchars, image = self.doPreprocessing(self.green)
+        return self.green, blackchars, brightchars, image
     @ret_green.setter
     def ret_green(self, val):
         pass
@@ -175,10 +189,10 @@ class TdPreprocessing:
     def ret_blue(self):
         ''' 获取蓝色通道图像的预处理结果
         '''
-        self.printParams("Do preprocessing Red Channel")
+        self.printParams("Do preprocessing Blue Channel")
         self.debug.clear().addImage("Blue", self.blue)
-        blackchars, brightchars = self.doPreprocessing(self.blue)
-        return self.blue, blackchars, brightchars
+        blackchars, brightchars, image = self.doPreprocessing(self.blue)
+        return self.blue, blackchars, brightchars, image
     @ret_blue.setter
     def ret_blue(self, val):
         pass

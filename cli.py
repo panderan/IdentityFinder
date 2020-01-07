@@ -15,8 +15,8 @@ from tdlib.preprocessing import TdPreprocessing
 from tdlib.extraction import TdExtractConnectDomain, ExtractDirection
 from tdlib.filters import TdFilter
 from tdlib.morphops import TdMorphOperator
-from tdlib.location import TdMergingTextLine, debugGenerateElectionImage
-from tdlib.location import threshold_of_position_ratio_for_idcard
+from tdlib.location import TdMergingTextLine
+from tdlib.common import crop_rect
 from conf.config import TdConfig, TdExtractConfigKey
 
 
@@ -44,6 +44,12 @@ class CliShowOptions(Enum):
     SHOW_FEATURE = 32
     SHOW_RESULT = 64
 
+class CliSaveOptions(Enum):
+    ''' 保存选项
+    '''
+    NONE = 0
+    MERGE = 1
+
 class CliGrayType(Enum):
     ''' Cli Gray Type
     '''
@@ -61,6 +67,8 @@ class Cli:
         self.config_file_path = None
         self.gray_type = None
         self.show_opts = []
+        self.makesample = False
+        self.save_option = CliSaveOptions.NONE
 
         self.preprocessing = TdPreprocessing()
         self.extracter = TdExtractConnectDomain()
@@ -75,51 +83,34 @@ class Cli:
         '''
         # 解析命令行参数
         self.parseArgs()
+        logger.info("CLI RUN, Image:%s", self.image_path)
+
         # 加载配置
         self.config.loadConfigFromFile(self.config_file_path)
+
         # 读取输入
         input_image = cv2.imread(self.image_path)
         rgb_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+
         # 预处理
         self.prepFunc(rgb_image)
+
         # 连通域提取
         binarizes = self.extractFunc()
+
         # 形态学优化
-        binarizes = self.morphFunc(binarizes)
-
-        #self.extracter.setConfig(self.config.getExtractConfig())
-        #ext_flt = self.filter.setConfig(self.config.getFilterConfig("extract"))
-        #_, binarized = self.extracter.extract_with_labels({"name":"Blue", "image":self.preprocessing.blue_channel_preped}, ext_flt)
-        #if self.show_opts & CliShowOptions.SHOW_EXTRACT.value:
-        #    plt.imshow(binarized, "gray")
-        #    plt.show()
-
-        # 形态学处理
-        #mph_flt = self.filter.setConfig(self.config.getFilterConfig("morph"))
-        #regions = self.morpher.morph_operation(binarized, mph_flt)
-        #if self.show_opts & CliShowOptions.SHOW_MORPH.value:
-        #    verbose_image = self.morpher.getMaskImage(binarized, regions)
-        #    plt.imshow(verbose_image, "gray")
-        #    plt.show()
+        regionlist = self.morphFunc(binarizes)
 
         # 文本行合并
-        #self.merger.setConfig(self.config.getMergeTLConfig())
-        #self.merger.debug.enableDebug(binarized.shape)
-        #self.merger.get_position_ratio_threshold = threshold_of_position_ratio_for_idcard
-        #self.merger.mergeTextLine(regions)
-        #if self.show_opts & CliShowOptions.SHOW_MERGED.value:
-        #    for i in range(self.merger.debug.getTotalElections()):
-        #        image = debugGenerateElectionImage(self.merger.debug, i)
-        #        cv2.namedWindow("Merged", 0)
-        #        cv2.imshow("Merged", image)
-        #        cv2.waitKey(0)
+        tlregionlist = self.mergingFunc(regionlist)
+        self.makeSVCSample(tlregionlist)
 
     def parseArgs(self):
         ''' 解析命令行参数
         '''
         try:
             opts, _ = getopt.getopt(sys.argv[1:], "i:", \
-                            ["show=", "config=", "gray=", "debug=", "help"])
+                            ["show=", "config=", "gray=", "makesample", "save=", "debug=", "help"])
         except getopt.GetoptError:
             print("argv error")
             sys.exit(1)
@@ -131,35 +122,29 @@ class Cli:
             elif cmd in "--config":
                 self.config_file_path = arg
             elif cmd in "--show":
-                options = arg.split(',')
-                self.show_opts = []
-                if "prep" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_PREP)
-                if "extract" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_EXTRACT)
-                if "morph" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_MORPH)
-                if "merge" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_MERGE)
-                if "merged" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_MERGED)
-                if "feature" in options:
-                    self.show_opts.append(CliShowOptions.SHOW_FEATURE)
+                arguments = arg.split(',')
+                options = {"prep": CliShowOptions.SHOW_PREP,
+                           "extract": CliShowOptions.SHOW_EXTRACT,
+                           "morph": CliShowOptions.SHOW_MORPH,
+                           "merge": CliShowOptions.SHOW_MERGE,
+                           "feature": CliShowOptions.SHOW_FEATURE}
+                self.show_opts = [options.get(i, CliShowOptions.SHOW_NONE) for i in arguments]
             elif cmd in '--gray':
-                options = arg.split(',')
-                self.gray_type = []
-                if 'gray' in options:
-                    self.gray_type.append(CliGrayType.GRAY)
-                if 'blue' in options:
-                    self.gray_type.append(CliGrayType.BLUE)
-                if 'green' in options:
-                    self.gray_type.append(CliGrayType.GREEN)
-                if 'red' in options:
-                    self.gray_type.append(CliGrayType.RED)
+                arguments = arg.split(',')
+                options = {"gray": CliGrayType.GRAY,
+                           "blue": CliGrayType.BLUE,
+                           "green": CliGrayType.GREEN,
+                           "red": CliGrayType.RED}
+                self.gray_type = [options.get(i, CliGrayType.GRAY) for i in arguments]
             elif cmd in '--debug':
-                options = arg.split(',')
-                if 'prep' in options:
+                arguments = arg.split(',')
+                if 'prep' in arguments:
                     self.preprocessing.debug.setEnable(True)
+            elif cmd in '--makesample':
+                self.makesample = True
+            elif cmd in '--save':
+                if arg == 'merge':
+                    self.save_option = CliSaveOptions.MERGE
             else:
                 usage()
                 sys.exit(1)
@@ -168,7 +153,7 @@ class Cli:
         ''' 显示预处理结果
         '''
         if CliShowOptions.SHOW_PREP not in self.show_opts:
-            return None
+            return
         for gray in self.gray_type:
             if gray is CliGrayType.GRAY:
                 gray_name = "Gray"
@@ -196,8 +181,8 @@ class Cli:
             else:
                 data = self.preprocessing.debug.data
                 total = len(data)
-                cols = np.uint8(np.ceil(math.sqrt(total)))
-                rows = np.uint8(np.floor(math.sqrt(total)))
+                cols = np.uint8(np.ceil(sqrt(total)))
+                rows = np.uint8(np.floor(sqrt(total)))
                 for i in range(1, total+1):
                     plt.subplot(rows*100 + cols*10 + i)
                     plt.title(data[i-1][0])
@@ -208,7 +193,7 @@ class Cli:
         ''' 显示连通域提取结果
         '''
         if CliShowOptions.SHOW_EXTRACT not in self.show_opts:
-            return None
+            return
         total = len(binarizes)
         rows, cols = int(floor(sqrt(total))), int(ceil(sqrt(total)))
         for i, binarized in enumerate(binarizes):
@@ -221,13 +206,29 @@ class Cli:
         ''' 显示形态学处理结果
         '''
         if CliShowOptions.SHOW_MORPH not in self.show_opts:
-            return None
+            return
         self.show_opts.append(CliShowOptions.SHOW_EXTRACT)
         binarizes = []
         for regiondata in regionlist:
             binarized = self.morpher.getMaskImage(regiondata[1], regiondata[2])
             binarizes.append((regiondata[0], binarized))
         self.showExtract(binarizes)
+
+    def showMerging(self, tlregionlist):
+        ''' 显示文本行合并结果
+        '''
+        if CliShowOptions.SHOW_MERGE not in self.show_opts and self.save_option is not CliSaveOptions.MERGE:
+            return
+
+        rgb_image = self.preprocessing.rgb_image.copy()
+        for item in tlregionlist:
+            rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, item[-1])
+            if CliShowOptions.SHOW_MERGE in self.show_opts:
+                plt.imshow(rgb_image)
+                plt.show()
+            if self.save_option is CliSaveOptions.MERGE:
+                bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+                cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
 
     def prepFunc(self, rgb_image):
         ''' 图像预处理
@@ -248,12 +249,16 @@ class Cli:
         ext_flt = self.filter.setConfig(self.config.getFilterConfig("extract"))
         for src in config[TdExtractConfigKey.SRCS]:
             grayname, chartype = src.split('.')
-            graydict = {'Gray': self.preprocessing.ret_gray,
-                        'Red': self.preprocessing.ret_red,
-                        'Green': self.preprocessing.ret_green,
-                        'Blue': self.preprocessing.ret_blue}
-            gray = graydict.get(grayname, None)
-            if gray is None:
+
+            if grayname == "Gray":
+                gray = self.preprocessing.ret_gray
+            elif grayname == "Red":
+                gray = self.preprocessing.ret_red
+            elif grayname == "Green":
+                gray = self.preprocessing.ret_green
+            elif grayname == "Blue":
+                gray = self.preprocessing.ret_blue
+            else:
                 sys.exit()
 
             if chartype in ["Black", "Both"]:
@@ -282,6 +287,41 @@ class Cli:
             regionlist.append(((binarized[0], binarized[1], regions.copy())))
         self.showMorph(regionlist)
         return regionlist
+
+    def mergingFunc(self, regionlist):
+        ''' 文本行合并
+        '''
+        tlregionlist = []
+        config = self.config.getMergeTLConfig()
+        self.merger.setConfig(config)
+        for name, binarized, regions in regionlist:
+            self.merger.printParams(name)
+            tl_regions = self.merger.mergeTextLine(regions)
+            tlregionlist.append((name, binarized, tl_regions))
+        self.showMerging(tlregionlist)
+        return tlregionlist
+
+    def makeSVCSample(self, tlregionlist):
+        ''' 生成特征分类样本
+        '''
+        if self.makesample is False:
+            return
+
+        plt.ion()
+        i = 0
+        for item in tlregionlist:
+            bg_image = self.preprocessing.getRet(item[0])[-1]
+            for region in item[-1]:
+                sample, _ = crop_rect(bg_image, region)
+                plt.imshow(sample, "gray")
+                plt.pause(0.2)
+                judge = input("is text region? : ")
+                judge = 'Y' if judge == 'Y' else 'N'
+                cv2.imwrite("data/Model/" + self.image_name + str(i) + "-" + judge + ".jpg", sample)
+                i += 1
+        plt.ioff()
+        sys.exit(0)
+
 
 if __name__ == '__main__':
     app = Cli()

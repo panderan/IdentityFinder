@@ -111,6 +111,7 @@ class AppMainWindow(QMainWindow):
                                         '~', "Image files (*.jpg *.gif *.png)")
         if fname == '':
             return
+        logger.info("Open Image:%s", fname)
         input_image = QImage(fname).convertToFormat(QImage.Format_RGB32)
         self.preprocess_display_widget.setImage(input_image)
         return

@@ -58,11 +58,11 @@ class MergeDisplayWidget(BasicDisplayWidget):
 
         # 合并文本行
         self.output_data, verboses_data = [], []
-        self.merger.get_position_ratio_threshold = threshold_of_position_ratio_for_idcard
         for name, binarized_image, regions in self.input_image:
             if megconf[TdMergeTLConfigKey.VERBOSE]:
                 self.merger.debug.enableDebug(self.color_image.shape)
                 self.merger.debug.setBgColorImage(self.color_image)
+            self.merger.printParams(name)
             tl_regions = self.merger.mergeTextLine(regions)
             self.output_data.append((name, binarized_image, tl_regions))
             if megconf[TdMergeTLConfigKey.VERBOSE]:

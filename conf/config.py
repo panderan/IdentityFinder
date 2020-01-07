@@ -105,6 +105,22 @@ class TdExtractConfig:
         '''
         return self.ext_configs
 
+
+
+class MergingStrategy(Enum):
+    ''' 策略标识
+    '''
+    HORIZON = 1
+    VERTICAL = 2
+    OPTIMAL = 3
+
+class MergingPositionRatio(Enum):
+    ''' 位置比率类型
+    '''
+    IDCARD = 1
+    CAR_PLATE = 2
+    CONSTANT = 3
+
 class TdMergeTLConfigKey(Enum):
     ''' TdMergeTLConfigKey
     '''
@@ -114,8 +130,9 @@ class TdMergeTLConfigKey(Enum):
     DISTANCE = 3
     STRATEGY = 4
     SCOPE_LIM = 5
-    VERBOSE = 6
-
+    POSITION_RATIO = 6
+    POSITION_RATIO_CONSTANT = 7
+    VERBOSE = 8
 
 class TdMergeTLConfig:
     ''' 文本行合并参数
@@ -126,8 +143,10 @@ class TdMergeTLConfig:
             TdMergeTLConfigKey.COMBINED_ASPECT_RATIO_LIM: [0.0, 0.0],
             TdMergeTLConfigKey.OVERLAP_RATIO: 0.25,
             TdMergeTLConfigKey.DISTANCE: 0.0,
-            TdMergeTLConfigKey.STRATEGY: "horizon",
+            TdMergeTLConfigKey.STRATEGY: MergingStrategy.HORIZON,
             TdMergeTLConfigKey.SCOPE_LIM: 0,
+            TdMergeTLConfigKey.POSITION_RATIO: MergingPositionRatio.CONSTANT,
+            TdMergeTLConfigKey.POSITION_RATIO_CONSTANT: 0.0,
             TdMergeTLConfigKey.VERBOSE: False
         }
 
@@ -141,11 +160,25 @@ class TdMergeTLConfig:
         TdMergeTLConfig.setConfigItem(self, TdMergeTLConfigKey.DISTANCE, float(yaml_data.get('distance', 0)))
         TdMergeTLConfig.setConfigItem(self, TdMergeTLConfigKey.STRATEGY, yaml_data.get('strategy', "horizon"))
         TdMergeTLConfig.setConfigItem(self, TdMergeTLConfigKey.SCOPE_LIM, yaml_data.get('scope_lim', 0))
+        TdMergeTLConfig.setConfigItem(self, TdMergeTLConfigKey.POSITION_RATIO, yaml_data.get('position_ratio', ("constant", 0.6)))
 
     def setConfigItem(self, key, value):
         ''' 设置单个参数
         '''
         if self.meg_configs.get(key, None) is not None:
+            if key is TdMergeTLConfigKey.STRATEGY:
+                options = {"horizon": MergingStrategy.HORIZON,
+                           "vertical": MergingStrategy.VERTICAL
+                          }
+                value = options.get(value, MergingStrategy.OPTIMAL)
+            if key is TdMergeTLConfigKey.POSITION_RATIO:
+                options = {"ID Card": MergingPositionRatio.IDCARD,
+                           "Car Plate": MergingPositionRatio.CAR_PLATE,
+                           "Constant": MergingPositionRatio.CONSTANT
+                          }
+                self.meg_configs[TdMergeTLConfigKey.POSITION_RATIO_CONSTANT] = value[-1]
+                value = options.get(value[0], MergingPositionRatio.CONSTANT)
+            # 设置键值对
             self.meg_configs[key] = value
             return True
         return False

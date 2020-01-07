@@ -87,7 +87,6 @@ class TdExtractConnectDomain:
             retmsrs 候选连通域列表，每一个元素为包含了该连通域的所有点的列表
             retboxes 候选连通域列表，每一个元素包含了该连通域的外接矩形
         '''
-        self.printParams()
         region_points, region_boxes = [], []
         mser = cv2.MSER_create(_delta=self.delta, _min_area=self.min_area, _max_area=self.max_area)
         if self.direction is ExtractDirection.Positive:
@@ -124,6 +123,7 @@ class TdExtractConnectDomain:
             rect_img 在原图中用矩形标出候选区域图像
             binarized 以背景图像为0，提取的连通域为255 的二值图像
         '''
+        self.printParams(gray_image_dict["name"])
         self.debug.newImage(gray_image_dict["name"])
         gray_image = gray_image_dict["image"]
         rect_image = gray_image.copy()
@@ -187,7 +187,7 @@ class TdExtractConnectDomain:
         self.__setConfigItem(TdExtractConfigKey.DIRECTION, config)
         return
 
-    def printParams(self):
+    def printParams(self, msg=""):
         ''' 打印当前参数
         '''
         params = {"delta": self.delta,
@@ -195,5 +195,5 @@ class TdExtractConnectDomain:
                   "max_area": self.max_area,
                   "variation": self.variation,
                   "direction": self.direction}
-        msg = "Extract Params %s" % params
-        logger.info(msg)
+        msg = msg + ", " if len(msg) > 0 else ""
+        logger.info("%sExtract Params: %s", msg, params)

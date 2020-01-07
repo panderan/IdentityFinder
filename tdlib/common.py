@@ -105,4 +105,28 @@ def tdShape(image):
 def is_in_range(num, range_numlist):
     ''' 判断一个数书否在一个范围内
     '''
-    return True if range_numlist[0] <= num <= range_numlist[1] else False
+    return range_numlist[0] <= num <= range_numlist[1]
+
+def crop_rect(img, region):
+    ''' 旋转矩形裁剪
+    '''
+    rect = cv2.minAreaRect(region)
+    if rect[1][1] > rect[1][0]:
+        rect = (rect[0], (rect[1][1], rect[1][0]), rect[2]+90)
+
+    # get the parameter of the small rectangle
+    center, size, angle = rect[0], rect[1], rect[2]
+    center, size = tuple(map(int, center)), tuple(map(int, size))
+
+    # get row and col num in img
+    height, width = img.shape[0], img.shape[1]
+
+    # calculate the rotation matrix
+    M = cv2.getRotationMatrix2D(center, angle, 1)
+    # rotate the original image
+    img_rot = cv2.warpAffine(img, M, (width, height))
+
+    # now rotated rectangle becomes vertical and we crop it
+    img_crop = cv2.getRectSubPix(img_rot, size, center)
+
+    return img_crop, img_rot

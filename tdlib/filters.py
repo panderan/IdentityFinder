@@ -11,7 +11,6 @@
 
 import logging
 import math
-from enum import Enum
 import cv2
 import numpy as np
 from conf.config import TdFilterConfigKey, TdFilterCheckType
@@ -240,10 +239,9 @@ class TdFilter:
         self.__setConfigItem(TdFilterConfigKey.COMPACTNESS_LIM, config)
         self.__setConfigItem(TdFilterConfigKey.WIDTH_LIM, config)
         self.__setConfigItem(TdFilterConfigKey.HEIGHT_LIM, config)
-        self.printParams()
         return self
 
-    def printParams(self):
+    def printParams(self, msg=""):
         ''' 打印当前参数
         '''
         params = {TdFilterConfigKey.FLAG.name: self.flag,
@@ -255,8 +253,8 @@ class TdFilter:
                   TdFilterConfigKey.COMPACTNESS_LIM.name: self.compactness_lim,
                   TdFilterConfigKey.WIDTH_LIM.name: self.width_lim,
                   TdFilterConfigKey.HEIGHT_LIM.name: self.height_lim}
-        msg = "Filter Params %s" % params
-        logger.info(msg)
+        msg = msg + ", " if len(msg) > 0 else ""
+        logger.info("%sFilter Params: %s", msg, params)
 
     @property
     def gray_image(self):

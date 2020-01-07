@@ -11,7 +11,7 @@ import math
 import numpy as np
 import cv2
 from tdlib.common import is_in_range
-from conf.config import TdMergeTLConfigKey
+from conf.config import TdMergeTLConfigKey, MergingStrategy, MergingPositionRatio
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,9 @@ class MergingIdxDB(Enum):
     DB_DIRECTION = 3
     DB_ASPECT_RATIO = 4
     DB_ROTATE_RECT = 5
-    DB_MAX = 6
+    DB_BWIDTH = 6
+    DB_BHEIGHT = 7
+    DB_MAX = 8
 
 
 class MergingIdxJDG(Enum):
@@ -44,12 +46,6 @@ class MergingFlagDirt(Enum):
     DIRECTION_TYPE_PARALLEL = 2
     DIRECTION_TYPE_VERTICAL = 4
 
-
-class MergingStrategy(Enum):
-    ''' 策略标识
-    '''
-    HORIZON = 1
-    VERTICAL = 2
 
 
 class TdMergingData:
@@ -85,7 +81,7 @@ class TdMergingData:
         region_item = self._getRegionItem(idx)
         if region_item is None:
             return None
-        if  region_item['params'] is None:
+        if region_item['params'] is None:
             region_item['params'] = [None for i in range(MergingIdxDB.DB_MAX.value)]
             params = region_item['params']
             ro_rect = cv2.minAreaRect(np.array(region_item['region']))
@@ -98,6 +94,10 @@ class TdMergingData:
             aspect_ratio = self.getRegionAspectRatio(ro_rect)
             params[MergingIdxDB.DB_ASPECT_RATIO.value] = aspect_ratio
             params[MergingIdxDB.DB_ROTATE_RECT.value] = ro_rect
+            params[MergingIdxDB.DB_BWIDTH.value] = max(region_item['region'][:, 0].tolist()) \
+                                                    - min(region_item['region'][:, 0].tolist())
+            params[MergingIdxDB.DB_BHEIGHT.value] = max(region_item['region'][:, 1].tolist()) \
+                                                    - min(region_item['region'][:, 1].tolist())
             region_item['params'] = params
         return region_item['params']
 
@@ -117,8 +117,9 @@ class TdMergingData:
     @staticmethod
     def getRegionDirection(region_ro_rect):
         ''' 返回 region 的方向
+        矩形初始方法均为宽大于高，当高大于宽说明矩形已逆时针转过90度。
         '''
-        init_angle = 0 if region_ro_rect[1][0] > region_ro_rect[1][1] else -90
+        init_angle = 0 if region_ro_rect[1][0] > region_ro_rect[1][1] else 90
         init_angle += region_ro_rect[2]
         init_angle = init_angle % 180
         return init_angle
@@ -137,14 +138,24 @@ class TdMergingData:
         return self._getRegionItem(idx)['region']
 
     def getParamWidth(self, idx):
-        ''' 获取指定 id 的 region 的宽度
+        ''' 获取指定 id 的 region 最小外接矩形的宽度
         '''
         return self.getRegionParams(idx)[MergingIdxDB.DB_WIDTH.value]
 
+    def getParamBWidth(self, idx):
+        ''' 获取指定 id 的 region 的实际宽度
+        '''
+        return self.getRegionParams(idx)[MergingIdxDB.DB_BWIDTH.value]
+
     def getParamHeight(self, idx):
-        ''' 获取指定 id 的 region 的高度
+        ''' 获取指定 id 的 region 最小外接矩形的高度
         '''
         return self.getRegionParams(idx)[MergingIdxDB.DB_HEIGHT.value]
+
+    def getParamBHeight(self, idx):
+        ''' 获取指定 id 的 region 的实际高度
+        '''
+        return self.getRegionParams(idx)[MergingIdxDB.DB_BHEIGHT.value]
 
     def getParamAreaSize(self, idx):
         ''' 获取指定 id 的 region 的面积
@@ -202,8 +213,7 @@ class TdMergingData:
         item = self._getRegionItem(idx)
         if len(item['private']) > pd_idx:
             return item['private'][pd_idx]
-        else:
-            return None
+        return None
 
     def insertRegion(self, region):
         ''' 新增一个 region
@@ -241,8 +251,7 @@ class TdMergingData:
         '''
         if flag:
             return sum([1 if v is not None else 0 for v in self.data['regions']])
-        else:
-            return len(self.data['regions'])
+        return len(self.data['regions'])
 
     def getAllRegionIds(self, flag=1):
         ''' 获取所有的 region ID
@@ -476,11 +485,13 @@ class TdMergingTextLine:
         self.t_of_merged_aspect_lim = [0.0, 3.0]    # 若合并后的长宽比超过此阈值则拒绝合并
         self.t_of_overlap_ratio = 0.25
         self.t_of_distance = 2.6
-        self.strategy = MergingStrategy.HORIZON.value
+        self.strategy = MergingStrategy.HORIZON
+        self.position_ratio = MergingPositionRatio.CONSTANT
+        self.position_ratio_constant = 0.0
 
         self.data = TdMergingData()
-        self.get_position_ratio_threshold = threshold_of_position_ratio_for_default
-        self.get_dirtection_threshold = threshold_of_angle_for_default
+        self.get_position_ratio_threshold = self._get_position_ratio_threshold
+        self.get_dirtection_threshold = self._get_dirtection_threshold
         self.debug = TdMergingDebugData()
 
     def setConfig(self, config):
@@ -490,11 +501,13 @@ class TdMergingTextLine:
         self.t_of_merged_aspect_lim = config.get(TdMergeTLConfigKey.COMBINED_ASPECT_RATIO_LIM, [0.0, 0.3])
         self.t_of_overlap_ratio = config.get(TdMergeTLConfigKey.OVERLAP_RATIO, 0.25)
         self.t_of_distance = config.get(TdMergeTLConfigKey.DISTANCE, 2.6)
-        strategy_dict = {"horizon": MergingStrategy.HORIZON.value,
-                         "vertical": MergingStrategy.VERTICAL.value
-                        }
-        self.strategy = strategy_dict.get(config.get(TdMergeTLConfigKey.STRATEGY, "horizon"), 0)
+        self.strategy = config.get(TdMergeTLConfigKey.STRATEGY, MergingStrategy.HORIZON)
         self.scope_lim = config.get(TdMergeTLConfigKey.SCOPE_LIM, 100)
+        self.position_ratio = config.get(TdMergeTLConfigKey.POSITION_RATIO, MergingPositionRatio.CONSTANT)
+        self.position_ratio_constant = config.get(TdMergeTLConfigKey.POSITION_RATIO_CONSTANT, 0.0)
+        # 设置位置比率参数
+        options = {MergingPositionRatio.IDCARD: threshold_of_position_ratio_for_idcard}
+        self.get_position_ratio_threshold = options.get(self.position_ratio, self._get_position_ratio_threshold)
 
     def mergeTextLine(self, regions):
         ''' 合并文本行
@@ -568,8 +581,8 @@ class TdMergingTextLine:
                           (ro_rect[1][0]+self.scope_lim, ro_rect[1][1]+self.scope_lim), \
                           ro_rect[2])
         scope_region = cv2.boxPoints(extend_ro_rect)
-        x_range = [min([x for x in scope_region[:, 0]]), max([x for x in scope_region[:, 0]])+1]
-        y_range = [min([y for y in scope_region[:, 1]]), max([y for y in scope_region[:, 1]])+1]
+        x_range = [min(scope_region[:, 0].tolist()), max((scope_region[:, 0]+1).tolist())]
+        y_range = [min(scope_region[:, 1].tolist()), max((scope_region[:, 1]+1).tolist())]
         xy_range = [x_range, y_range]
 
         region_ids = set()
@@ -586,17 +599,22 @@ class TdMergingTextLine:
         best_id = None
         cur_center_vertex = data.getRegionCenterVertex(cur_id)
         for idx in ids:
+            val = data.getPrivateData(idx, 0)
+            if val is None:
+                logger.error("Position Ratio is not exist, can not pick up best.")
+                continue
+
             center_vertex = data.getRegionCenterVertex(idx)
-            if self.strategy & MergingStrategy.HORIZON.value:
-                vals.append([abs(center_vertex[0]-cur_center_vertex[0]), idx])
-            elif self.strategy & MergingStrategy.VERTICAL.value:
-                vals.append([abs(center_vertex[1]-cur_center_vertex[1]), idx])
-            else:
-                val = data.getPrivateData(idx, 0)
-                if val is not None:
-                    vals.append([val, idx])
-        best_id = max(vals, key=lambda v: v[0])
-        return best_id[1]
+            if self.strategy is MergingStrategy.HORIZON:
+                vals.append([idx, val, abs(center_vertex[0]-cur_center_vertex[0])-data.getParamBWidth(idx)/2])
+            if self.strategy is MergingStrategy.VERTICAL:
+                vals.append([idx, val, abs(center_vertex[1]-cur_center_vertex[1])-data.getParamBHeight(idx)/2])
+
+        if self.strategy in [MergingStrategy.HORIZON, MergingStrategy.VERTICAL]:
+            vals = [i for i in vals if i[-1] > 0]
+
+        best_id = max(vals, key=lambda v: v[1])
+        return best_id[0]
 
     def _mergeTowRegions(self, data, id1, id2):
         ''' 合并两个 region
@@ -654,7 +672,8 @@ class TdMergingTextLine:
             return True
         return False
 
-    def _getOverlapRatio(self, data, id1, id2):
+    @staticmethod
+    def _getOverlapRatio(data, id1, id2):
         ''' 计算两个 region 的重叠率
         '''
         all_vertexs = np.vstack((data.getRegionVertexs(id1), data.getRegionVertexs(id2)))
@@ -672,7 +691,8 @@ class TdMergingTextLine:
         min_size = size1 if size1 < size2 else size2
         return np.sum(mask_region1 & mask_region2)/min_size
 
-    def _getCenterLineDirection(self, data, id1, id2):
+    @staticmethod
+    def _getCenterLineDirection(data, id1, id2):
         ''' 计算两个 region 中心点的连线
         '''
         center_vertex1 = np.array(data.getRegionCenterVertex(id1))
@@ -686,13 +706,14 @@ class TdMergingTextLine:
         angle = angle % 180
         return angle
 
-    def _isAngleSatisfy(self, angle, threshold, flag):
+    @staticmethod
+    def _isAngleSatisfy(angle, threshold, flag):
         ''' 检测夹角是否满足平行或垂直条件
         '''
         if flag & MergingFlagDirt.DIRECTION_TYPE_PARALLEL.value:
             if angle > threshold[0]:
-                if flag & MergingFlagDirt.DIRECTION_TYPE_VERTICAL.value and angle > threshold[1]:
-                    return True     # 不满足平行，但满足垂直
+                # if flag & MergingFlagDirt.DIRECTION_TYPE_VERTICAL.value and angle > threshold[1]:
+                #     return True     # 不满足平行，但满足垂直
                 return False    # 仅平行判断，但不满足平行
             return True     # 满足平行
 
@@ -708,11 +729,11 @@ class TdMergingTextLine:
             return True
 
         dir_type = MergingFlagDirt.DIRECTION_TYPE_PARALLEL.value
-        if data.getParamAspectRatio(id1) < 1.5 or data.getParamAspectRatio(id2) < 1.5:
-            dir_type |= MergingFlagDirt.DIRECTION_TYPE_VERTICAL.value
+        # if data.getParamAspectRatio(id1) < 1.5 or data.getParamAspectRatio(id2) < 1.5:
+        #     dir_type |= MergingFlagDirt.DIRECTION_TYPE_VERTICAL.value
 
-        dir1 = data.getParamDirection(id1)
-        dir2 = data.getParamDirection(id2)
+        dir1, mcr1 = data.getParamDirection(id1), data.isMultiCharRegion(id1)
+        dir2, mcr2 = data.getParamDirection(id2), data.isMultiCharRegion(id2)
         centerline_dir = self._getCenterLineDirection(data, id1, id2)
         test_angle1 = min([abs(centerline_dir-dir1), 180-abs(centerline_dir-dir1)])
         test_angle2 = min([abs(centerline_dir-dir2), 180-abs(centerline_dir-dir2)])
@@ -721,6 +742,10 @@ class TdMergingTextLine:
         ret2 = self._isAngleSatisfy(test_angle2, threshold, dir_type)
         self.debug.setLastElection_LastSatisfiedItem(('direction', [dir1, dir2, centerline_dir, threshold, dir_type, ret1, ret2]))
 
+        if not mcr1:
+            ret1 = False
+        if not mcr2:
+            ret2 = False
         if not ret1 and not ret2:
             return False
 
@@ -746,9 +771,9 @@ class TdMergingTextLine:
         shift_vertexs1 = [[v[0]-low_x, v[1]-low_y] for v in data.getRegionVertexs(id1)]
         shift_vertexs2 = [[v[0]-low_x, v[1]-low_y] for v in data.getRegionVertexs(id2)]
 
-        mask_region1 = np.uint8(np.zeros((high_x-low_x, high_y-low_y)))
+        mask_region1 = np.uint8(np.zeros((high_y-low_y, high_x-low_x)))
         mask_region1 = cv2.drawContours(mask_region1, [np.array(shift_vertexs1)], 0, 255, cv2.FILLED)
-        mask_region1 = cv2.morphologyEx(mask_region1, cv2.MORPH_DILATE, kel)
+        mask_region1 = cv2.dilate(mask_region1, kel)
         mask_region1 = cv2.drawContours(mask_region1, [np.array(shift_vertexs2)], 0, 255, cv2.FILLED)
         _, contours, _ = cv2.findContours(np.uint8(mask_region1), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         retval = bool(len(contours) == 1)
@@ -762,7 +787,7 @@ class TdMergingTextLine:
         center_vertex1 = data.getRegionCenterVertex(id1)
         center_vertex2 = data.getRegionCenterVertex(id2)
 
-        if self.strategy & MergingStrategy.HORIZON.value:
+        if self.strategy is MergingStrategy.HORIZON:
             _, _, width1, _ = cv2.boundingRect(data.getRegionVertexs(id1))
             _, _, width2, _ = cv2.boundingRect(data.getRegionVertexs(id2))
             threshold = width1 if width1 > width2 else width2
@@ -770,7 +795,7 @@ class TdMergingTextLine:
             self.debug.setLastElection_LastSatisfiedItem(('strategy', [center_vertex1[0], center_vertex2[0], threshold, self.strategy, retval]))
             return retval
 
-        if self.strategy & MergingStrategy.VERTICAL.value:
+        if self.strategy is MergingStrategy.VERTICAL:
             _, _, _, height1 = cv2.boundingRect(data.getReionVertex(id1))
             _, _, _, height2 = cv2.boundingRect(data.getReionVertex(id2))
             threshold = height1 if height1 > height2 else height2
@@ -778,6 +803,22 @@ class TdMergingTextLine:
             self.debug.setLastElection_LastSatisfiedItem(('strategy', [center_vertex1[1], center_vertex2[1], threshold, self.strategy, retval]))
             return retval
         return True
+
+    def _get_position_ratio_threshold(self, data, id1, id2):
+        ''' 获取位置比率阈值，返回固定值
+        '''
+        return self.position_ratio_constant
+
+    @staticmethod
+    def _get_dirtection_threshold(data, id1, id2):
+        ''' 获取方向判断阈值,返回固定值
+        '''
+        w, h = data.getParamHeight(id1), data.getParamWidth(id1)
+        x = w/h if h > 0 else 1
+        x = 1/x if x > 1 else x
+        threshold = math.degrees(math.atan(x))
+        # threshold = 22.5
+        return [threshold, 90-threshold]
 
     @staticmethod
     def drawRegions(bg_image, color, draw_type, regions):
@@ -787,36 +828,38 @@ class TdMergingTextLine:
             bg_image = cv2.drawContours(bg_image, [region], 0, color, 1, draw_type)
         return bg_image
 
+    def printParams(self, msg=""):
+        ''' 打印当前配置
+        '''
+        params = {}
+        params[TdMergeTLConfigKey.COMBINED_AREA_SIZE_LIM.name] = self.t_of_merged_areasize_lim
+        params[TdMergeTLConfigKey.COMBINED_ASPECT_RATIO_LIM.name] = self.t_of_merged_aspect_lim
+        params[TdMergeTLConfigKey.OVERLAP_RATIO.name] = self.t_of_overlap_ratio
+        params[TdMergeTLConfigKey.DISTANCE.name] = self.t_of_distance
+        params[TdMergeTLConfigKey.STRATEGY.name] = self.strategy.name
+        params[TdMergeTLConfigKey.POSITION_RATIO.name] = self.position_ratio.name
+        params[TdMergeTLConfigKey.POSITION_RATIO_CONSTANT.name] = self.position_ratio_constant
+        msg = msg + ", " if len(msg) > 0 else ""
+        logger.info("%sMerging Params: %s", msg, params)
 
 
-def threshold_of_position_ratio_for_default(data, id1, id2):
-    ''' 默认 position ratio 的阈值
-    '''
-    return 0.7
+
 
 def threshold_of_position_ratio_for_idcard(data, id1, id2):
     ''' position ratio 阈值 FOR ID CARD
     '''
     for idx in [id1, id2]:
         if not data.isMultiCharRegion(idx):
-            if data.getParamAspectRatio(idx) > 2.0:
+            if data.getParamAspectRatio(idx) < 1.5:
                 return 0.55
-            else:
-                return 0.60
+            return 0.60
     if data.getParamAspectRatio(id1) > 8.0 or data.getParamAspectRatio(id2) > 8.0:
         return 0.80
     if data.getParamAspectRatio(id1) > 5.0 or data.getParamAspectRatio(id2) > 5.0:
         return 0.76
     if data.getParamAspectRatio(id1) > 3.0 or data.getParamAspectRatio(id2) > 3.0:
         return 0.72
-    return 0.70
-
-
-def threshold_of_angle_for_default(data, id1, id2):
-    ''' 默认 direction 的阈值
-    '''
-    threshold = 30
-    return [threshold, 90-threshold]
+    return 0.60
 
 
 def debugGenerateElectionImage(debug_data, elec_id):

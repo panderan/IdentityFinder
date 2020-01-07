@@ -285,7 +285,7 @@ class VerboseDisplayWidget(QWidget):
                 "  center1: %.3f\n"%value[0] + \
                 "  center2: %.3f\n"%value[1] + \
                 "  threshold: %.3f\n"%value[2] + \
-                "  strategy: %d\n"%value[3] + \
+                "  strategy: %sn"%value[3].name + \
                 "  retval: %s\n"%value[4]
         self.ui.textbrowser_info.setText(text)
 
@@ -295,6 +295,7 @@ class VerboseDisplayWidget(QWidget):
     def clearData(self):
         ''' 删除所有数据
         '''
+        self.cv_verbose_dict = None
         self.temp_image_1 = None
         self.cv_image = None
         self.ui.combo_sources.clear()
