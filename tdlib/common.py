@@ -6,6 +6,7 @@
 from itertools import accumulate, repeat
 from operator import add
 from functools import reduce
+from math import sqrt
 import numpy as np
 import cv2
 
@@ -107,6 +108,7 @@ def is_in_range(num, range_numlist):
     '''
     return range_numlist[0] <= num <= range_numlist[1]
 
+
 def crop_rect(img, region):
     ''' 旋转矩形裁剪
     '''
@@ -130,3 +132,16 @@ def crop_rect(img, region):
     img_crop = cv2.getRectSubPix(img_rot, size, center)
 
     return img_crop, img_rot
+
+
+def zoomImage(img, total_pixels):
+    ''' 将图像等比缩放到一个指定的像素量
+    Args：
+        img 输入的灰度图像
+        total_pixels 缩放后的像素量
+    Return：
+        img 缩放后的图像
+    '''
+    zoom_level = sqrt(img.shape[0] * img.shape[1] / total_pixels)
+    return cv2.resize(img, (int(img.shape[1]/zoom_level), int(img.shape[0]/zoom_level)))
+    
