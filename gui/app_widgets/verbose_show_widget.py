@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import QWidget, QListWidgetItem
 from gui.ui.verbose_show_ui import Ui_VerboseDisplay
 from gui.app_widgets.basic_display_widget import BasicDisplayWidget
 from tdlib.location import debugGenerateCompareImage
-from conf.config import TdFilterConfigKey
 
 class VerboseDisplayWidget(QWidget):
     ''' 弹窗显示指定图像

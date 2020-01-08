@@ -19,6 +19,9 @@ merge:
     distance: 2.6
     strategy: "horizon"
 
+svc:
+    mconf_path: "conf/svc/idcard.yaml"
+
 filters:
     extract:
         flag: ["width", "height", "perimeter", "aspect_ratio", "occupied_ratio", "compactness"]

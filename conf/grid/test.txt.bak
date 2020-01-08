@@ -1,0 +1,82 @@
+[
+    {
+        "kernel": [
+            "poly"
+        ],
+        "gamma": [
+            "scale"
+        ],
+        "degree": [
+            5
+        ],
+        "C": [
+            285
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    },
+    {
+        "kernel": [
+            "rbf"
+        ],
+        "gamma": [
+            1.60e-09
+        ],
+        "degree": [
+            3 
+        ],
+        "C": [
+            800
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    },
+    {
+        "kernel": [
+            "linear"
+        ],
+        "gamma": [
+            "scale",
+            "auto"
+        ],
+        "degree": [
+            3 
+        ],
+        "C": [
+            100,
+            1000
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    }
+]

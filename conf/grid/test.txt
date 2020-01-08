@@ -1,0 +1,54 @@
+[
+    {
+        "kernel": [
+            "poly"
+        ],
+        "gamma": [
+            "scale"
+        ],
+        "degree": [
+            5
+        ],
+        "C": [
+           263
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    },
+    {
+        "kernel": [
+            "rbf"
+        ],
+        "gamma": [
+			1.2e-09
+        ],
+        "degree": [
+            3 
+        ],
+        "C": [
+            550
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    }
+]

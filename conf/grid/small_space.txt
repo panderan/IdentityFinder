@@ -1,0 +1,37 @@
+[
+    {
+        "kernel": [
+            "poly"
+        ],
+        "gamma": [
+            "scale",
+            "auto"
+        ],
+        "degree": [
+            5,
+            15,
+            25,
+            35,
+            45,
+            55
+        ],
+        "C": [
+            1,
+            10,
+            100,
+            1000
+        ],
+        "coef0": [
+            0.0
+        ],
+        "shrinking": [
+            true
+        ],
+        "probability": [
+            false
+        ],
+        "max_iter": [
+            10000000
+        ]
+    }
+]

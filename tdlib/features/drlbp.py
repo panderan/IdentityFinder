@@ -4,6 +4,7 @@
 # 提取选区 DLBP 特征类
 '''
 import os
+import math
 import re
 import numpy as np
 import cv2
@@ -37,31 +38,33 @@ class TdFeatureTrainingDRLBP:
         ''' 见 DLBP Algorithm 2
         Args:
             dirpath 包含训练样本的目录路径
+        Return:
+            k 主要LBP编码数量
+            vtrs LBP特征向量
+            labels 标签向量
         '''
-        k = None
-        vtrs = []
-        labels = []
-        for root, _, files in os.walk(dirpath, topdown=True):
-            if root == dirpath:
-                k = 0.0
-                for filename in files:
-                    if re.search('[jpg|png]$', filename):
-                        i, x = self.calc_k(os.path.join(root, filename))
-                        k += i
-                        vtrs.append(x)
-                        labels.append(filename[-5])
-                k = k / len(files)
-                self.k = np.int0(k+0.5) + self.k_c
-                break
-        return (k, vtrs, labels)
+        k, vtrs = 0.0, []
+        files = os.listdir(dirpath)
+        for fname in files:
+            fpath = dirpath + '/' + fname
+            if not os.path.isfile(fpath):
+                continue
+            if re.search('jpg$|png$|JPG$|PNG$', fname) is None:
+                continue
+            i, x = self.calc_k(fpath)
+            k += i
+            vtrs.append((x, 1 if fname[-5] == 'Y' else 0))
+        k = k / len(files)
+        return k, vtrs
 
     def get_lbp(self, gray_image):
         ''' 计算 lbp 特征
         '''
         lbp_image = feature.local_binary_pattern(gray_image, self.number_points, self.radius, method="ror")
-        hist = cv2.calcHist([lbp_image], [0], None, [256], [0, 255])
-        hist = hist.T.tolist()[0]   # numpy 转换为 list
-        hist = hist.sort(reverse=True)
+        hist_size = int(math.pow(2, self.number_points))
+        hist_range = [0, hist_size-1]
+        hist = np.histogram(np.int64(lbp_image), hist_size, hist_range)[0].tolist()
+        hist.sort(reverse=True)
         return hist
 
     def calc_k(self, filename):
@@ -72,7 +75,7 @@ class TdFeatureTrainingDRLBP:
             i, hist
         '''
         # 提取 gimg 文件 lbp
-        gimg = cv2.imread(filename, 0)
+        gimg = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
         hist = self.get_lbp(gimg)
 
         # 计算主要LBP值
@@ -81,7 +84,16 @@ class TdFeatureTrainingDRLBP:
             acc += item
             if acc/total > self.occupied:
                 return (i, hist)
+        return None
 
+    @property
+    def k(self):
+        ''' 获取k值
+        '''
+        return self._k + self.k_c
+    @k.setter
+    def k(self, val):
+        self._k = val
 
 class TdFeatureDRLBP(TdFeatureTrainingDRLBP):
     ''' DLBP 特征提取类

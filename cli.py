@@ -16,8 +16,9 @@ from tdlib.extraction import TdExtractConnectDomain, ExtractDirection
 from tdlib.filters import TdFilter
 from tdlib.morphops import TdMorphOperator
 from tdlib.location import TdMergingTextLine
+from tdlib.svc import TdSVC
 from tdlib.common import crop_rect
-from conf.config import TdConfig, TdExtractConfigKey
+from conf.config import TdConfig, TdExtractConfigKey, TdSVCConfigKey
 
 
 logging.basicConfig(level=logging.INFO, \
@@ -41,7 +42,7 @@ class CliShowOptions(Enum):
     SHOW_MORPH = 4
     SHOW_MERGE = 8
     SHOW_MERGED = 16
-    SHOW_FEATURE = 32
+    SHOW_SVC = 32
     SHOW_RESULT = 64
 
 class CliSaveOptions(Enum):
@@ -49,6 +50,7 @@ class CliSaveOptions(Enum):
     '''
     NONE = 0
     MERGE = 1
+    SVC = 2
 
 class CliGrayType(Enum):
     ''' Cli Gray Type
@@ -74,6 +76,7 @@ class Cli:
         self.extracter = TdExtractConnectDomain()
         self.filter = TdFilter()
         self.merger = TdMergingTextLine()
+        self.svc = TdSVC()
 
         self.config = TdConfig()
         self.morpher = TdMorphOperator()
@@ -105,6 +108,12 @@ class Cli:
         tlregionlist = self.mergingFunc(regionlist)
         self.makeSVCSample(tlregionlist)
 
+        # 纹理特征过滤
+        mconf_path = self.config.getSVCConfig().get(TdSVCConfigKey.MCONF_PATH, None)
+        if mconf_path is not None:
+            final_tl = self.svcFunc(tlregionlist, mconf_path)
+        return final_tl
+
     def parseArgs(self):
         ''' 解析命令行参数
         '''
@@ -127,7 +136,7 @@ class Cli:
                            "extract": CliShowOptions.SHOW_EXTRACT,
                            "morph": CliShowOptions.SHOW_MORPH,
                            "merge": CliShowOptions.SHOW_MERGE,
-                           "feature": CliShowOptions.SHOW_FEATURE}
+                           "textline": CliShowOptions.SHOW_SVC}
                 self.show_opts = [options.get(i, CliShowOptions.SHOW_NONE) for i in arguments]
             elif cmd in '--gray':
                 arguments = arg.split(',')
@@ -143,8 +152,9 @@ class Cli:
             elif cmd in '--makesample':
                 self.makesample = True
             elif cmd in '--save':
-                if arg == 'merge':
-                    self.save_option = CliSaveOptions.MERGE
+                options = {"merge": CliSaveOptions.MERGE,
+                           "svc": CliSaveOptions.SVC}
+                self.save_option = options.get(arg, None)
             else:
                 usage()
                 sys.exit(1)
@@ -220,13 +230,30 @@ class Cli:
         if CliShowOptions.SHOW_MERGE not in self.show_opts and self.save_option is not CliSaveOptions.MERGE:
             return
 
-        rgb_image = self.preprocessing.rgb_image.copy()
         for item in tlregionlist:
+            rgb_image = self.preprocessing.rgb_image.copy()
             rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, item[-1])
             if CliShowOptions.SHOW_MERGE in self.show_opts:
                 plt.imshow(rgb_image)
                 plt.show()
             if self.save_option is CliSaveOptions.MERGE:
+                bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+                cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
+
+    def showSVC(self, final_tl):
+        ''' 显示最终文本行
+        '''
+        if CliShowOptions.SHOW_SVC not in self.show_opts and self.save_option is not CliSaveOptions.SVC:
+            return
+
+        for item in final_tl:
+            rgb_image = self.preprocessing.rgb_image.copy()
+            rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, item[-2])
+            rgb_image = TdMergingTextLine.drawRegions(rgb_image, (0, 255, 0), cv2.LINE_4, item[-1])
+            if CliShowOptions.SHOW_SVC in self.show_opts:
+                plt.imshow(rgb_image)
+                plt.show()
+            if self.save_option is CliSaveOptions.SVC:
                 bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
                 cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
 
@@ -300,6 +327,23 @@ class Cli:
             tlregionlist.append((name, binarized, tl_regions))
         self.showMerging(tlregionlist)
         return tlregionlist
+
+    def svcFunc(self, tlregionlist, mconf_path):
+        ''' 基于纹理特征过滤
+        '''
+        self.svc.init(mconf_path)
+        final_tl = []
+        for item in tlregionlist:
+            bg_image = self.preprocessing.getRet(item[0])[-1]
+            tl = []
+            for region in item[-1]:
+                sample, _ = crop_rect(bg_image, region)
+                ret = self.svc.predict(sample)
+                if ret:
+                    tl.append(region)
+            final_tl.append((item[0], item[-1], tl))
+        self.showSVC(final_tl)
+        return final_tl
 
     def makeSVCSample(self, tlregionlist):
         ''' 生成特征分类样本
