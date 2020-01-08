@@ -1,0 +1,9 @@
+drlbp:
+- 8
+- 1
+- 0.8
+- 10
+k: 3
+method: equScale
+model: conf/svc/idcard.model
+quantity: 100000
