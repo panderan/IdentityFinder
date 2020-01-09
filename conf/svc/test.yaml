@@ -5,3 +5,5 @@ drlbp:
 - 10
 k: 3
 mpath: conf/svc/test.model
+method: equScale
+quantity: 100000
