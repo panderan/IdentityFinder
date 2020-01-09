@@ -4,6 +4,7 @@
 # 提取选区 DLBP 特征类
 '''
 import os
+import math
 import re
 import numpy as np
 import cv2
@@ -60,8 +61,9 @@ class TdFeatureTrainingDRLBP:
         ''' 计算 lbp 特征
         '''
         lbp_image = feature.local_binary_pattern(gray_image, self.number_points, self.radius, method="ror")
-        hist = cv2.calcHist([np.uint8(lbp_image)], [0], None, [256], [0, 255])
-        hist = hist.T.tolist()[0]   # numpy 转换为 list
+        hist_size = int(math.pow(2, self.number_points))
+        hist_range = [0, hist_size-1]
+        hist = np.histogram(np.int64(lbp_image), hist_size, hist_range)[0].tolist()
         hist.sort(reverse=True)
         return hist
 

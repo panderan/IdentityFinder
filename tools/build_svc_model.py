@@ -92,7 +92,7 @@ def errorOccur(msg):
 
 if __name__ == "__main__":
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "i:s:gp:n:h", ["help"])
+        opts, _ = getopt.getopt(sys.argv[1:], "i:s:gp:n:d:h", ["help"])
     except getopt.GetoptError:
         print("argv error")
         sys.exit(1)

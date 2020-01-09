@@ -50,7 +50,7 @@ class AppMainWindow(QMainWindow):
         self.createPrepDisplayWidget()
         self.createExtractDisplayWidget()
         self.createMergeDisplayWidget()
-        self.createIdentifyWithFeatureDisplayWidget()
+        self.createSVCDisplayWidget()
 
         self.onActionIdentifyWithFeature()
         self.updateStatusBar()
@@ -60,14 +60,14 @@ class AppMainWindow(QMainWindow):
         '''
         初始化信号和槽
         '''
-        self.ui.action_about.triggered.connect(self.onActionAbout)
-        self.ui.action_open.triggered.connect(self.onActionOpen)
-        self.ui.action_open_current_control_panel.triggered.connect(self.onActionOpenCurrentControlPanel)
-        self.ui.action_preprocessing.triggered.connect(self.onActionPreprocessing)
-        self.ui.action_extract_connect_domain.triggered.connect(self.onActionExtratConnectDomain)
-        self.ui.action_merging_text_line.triggered.connect(self.onActionMergingTextLine)
+        self.ui.action_about.triggered.connect(self.onAction_MenuBar_About)
+        self.ui.action_open.triggered.connect(self.onAction_MenuBar_Open)
+        self.ui.action_open_current_control_panel.triggered.connect(self.onAction_MenuBar_OpenCurrentControlPanel)
+        self.ui.action_preprocessing.triggered.connect(self.onAction_MenuBar_Preprocessing)
+        self.ui.action_extract_connect_domain.triggered.connect(self.onAction_MenuBar_ExtratConnectDomain)
+        self.ui.action_merging_text_line.triggered.connect(self.onAction_MenuBar_MergingTextLine)
         self.ui.action_identify_with_feature.triggered.connect(self.onActionIdentifyWithFeature)
-        self.ui.action_load_config.triggered.connect(self.onActionLoadConf)
+        self.ui.action_load_config.triggered.connect(self.onAction_MenuBar_LoadConf)
         self.ui.btn_locate.clicked.connect(self.onActionBtnLocation)
 
     def initResources(self):
@@ -99,13 +99,13 @@ class AppMainWindow(QMainWindow):
         self.statusbar_label_confile.setText(AppSettings.config_file_path.split('/')[-1])
         self.statusbar_label_curstage.setText(AppSettings.curstage)
 
-    def onActionAbout(self):
+    def onAction_MenuBar_About(self):
         ''' About 响应函数
         '''
         QMessageBox.about(self, "About", self.strings["ABOUT"])
         return
 
-    def onActionOpen(self):
+    def onAction_MenuBar_Open(self):
         ''' Open 响应函数
         '''
         fname, _ = QFileDialog.getOpenFileName(self, "Open file", \
@@ -115,16 +115,17 @@ class AppMainWindow(QMainWindow):
         logger.info("Open Image:%s", fname)
         input_image = QImage(fname).convertToFormat(QImage.Format_RGB32)
         self.preprocess_display_widget.setImage(input_image)
+        self.svc_display_widget.setImage(input_image)
         return
 
-    def onActionOpenCurrentControlPanel(self):
+    def onAction_MenuBar_OpenCurrentControlPanel(self):
         '''
         OpenCurrentControlPanel 响应函数
         '''
         self.ui.display_widget.openControlPanel()
         return
 
-    def onActionLoadConf(self):
+    def onAction_MenuBar_LoadConf(self):
         ''' 载入配置文件
         '''
         fname, _ = QFileDialog.getOpenFileName(self, "Open Config file", \
@@ -194,7 +195,7 @@ class AppMainWindow(QMainWindow):
             self.merging_display_widget.requireData.connect(self.onActionMergerRequireData, Qt.DirectConnection)
             self.merging_display_widget.hide()
 
-    def createIdentifyWithFeatureDisplayWidget(self):
+    def createSVCDisplayWidget(self):
         ''' 创建 IdentifyWithFeature 窗体
         '''
         if self.svc_display_widget is None:
@@ -204,7 +205,7 @@ class AppMainWindow(QMainWindow):
             self.svc_display_widget.requireData.connect(self.onActionSVCRequireData, Qt.DirectConnection)
             self.svc_display_widget.hide()
 
-    def onActionPreprocessing(self):
+    def onAction_MenuBar_Preprocessing(self):
         ''' Stage->Preprocessing 菜单响应函数，将预处理窗口设置为当前窗口
         '''
         self.createPrepDisplayWidget()
@@ -216,7 +217,7 @@ class AppMainWindow(QMainWindow):
         self._onlyShow("prep")
         return
 
-    def onActionExtratConnectDomain(self):
+    def onAction_MenuBar_ExtratConnectDomain(self):
         ''' Stage->Extract Connect Domain 菜单响应函数，将连通域提取窗口设置为当前窗口
         '''
         self.createExtractDisplayWidget()
@@ -228,7 +229,7 @@ class AppMainWindow(QMainWindow):
         self._onlyShow("extract")
         return
 
-    def onActionMergingTextLine(self):
+    def onAction_MenuBar_MergingTextLine(self):
         ''' Stage->Merging Text Line 菜单响应函数，将文本行合并窗口设置为当前窗口
         '''
         self.createMergeDisplayWidget()
@@ -243,7 +244,7 @@ class AppMainWindow(QMainWindow):
     def onActionIdentifyWithFeature(self):
         ''' Stage->Identify with Feature 菜单响应函数，将特征鉴别窗口设置为当前窗口
         '''
-        self.createIdentifyWithFeatureDisplayWidget()
+        self.createSVCDisplayWidget()
         old_display_widget_item = self.ui.verticalLayout.itemAt(0)
         self.ui.verticalLayout.removeItem(old_display_widget_item)
         self.ui.verticalLayout.insertWidget(0, self.svc_display_widget)
