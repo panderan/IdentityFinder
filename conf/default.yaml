@@ -19,7 +19,7 @@ merge:
     distance: 2.6
     strategy: "horizon"
 
-svm:
+svc:
     mconf_path: "conf/svc/idcard.yaml"
 
 filters:

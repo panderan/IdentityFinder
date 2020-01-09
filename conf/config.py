@@ -302,7 +302,39 @@ class TdFilterConfig:
         return self.flt_configs.get(keystr, None)
 
 
-class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
+class TdSVCConfigKey(Enum):
+    ''' TdSVC 配置项
+    '''
+    MCONF_PATH = 0
+
+class TdSVCConfig:
+    ''' SVC 参数
+    '''
+    def __init__(self):
+        self.svc_configs = {
+            TdSVCConfigKey.MCONF_PATH: "/path/to/svc/model/file"
+        }
+        self.svc_configs[TdSVCConfigKey.MCONF_PATH] = None
+
+    def setConfig(self, configs):
+        ''' 从 YAML 配置文件中设置
+        '''
+        yaml_data = configs['svc']
+        TdSVCConfig.setConfigItem(self, TdSVCConfigKey.MCONF_PATH, yaml_data.get('mconf_path', None))
+
+    def setConfigItem(self, conf_key, value):
+        ''' 这是单个配置项
+        '''
+        self.svc_configs[conf_key] = value
+        return value
+
+    def getConfig(self):
+        ''' 获取整个配置
+        '''
+        return self.svc_configs
+
+
+class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig, TdSVCConfig):
     ''' 配置文件类
     '''
     def __init__(self, config_file_path=None):
@@ -310,6 +342,7 @@ class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
         TdExtractConfig.__init__(self)
         TdMergeTLConfig.__init__(self)
         TdFilterConfig.__init__(self)
+        TdSVCConfig.__init__(self)
         if config_file_path is not None:
             self.loadConfigFromFile(config_file_path)
 
@@ -327,6 +360,11 @@ class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
         ''' 获取文本行合并参数
         '''
         return TdMergeTLConfig.getConfig(self)
+
+    def getSVCConfig(self):
+        ''' 获取SVC配置
+        '''
+        return TdSVCConfig.getConfig(self)
 
     def getFilterConfig(self, keystr):
         ''' 获取过滤器参数
@@ -347,6 +385,7 @@ class TdConfig(TdPrepConfig, TdExtractConfig, TdMergeTLConfig, TdFilterConfig):
         TdExtractConfig.setConfig(self, config)
         TdMergeTLConfig.setConfig(self, config)
         TdFilterConfig.setConfig(self, config)
+        TdSVCConfig.setConfig(self, config)
 
 
 class AppSettings:

@@ -31,9 +31,9 @@ class TdSVC:
         if not Path(mconf_path).exists():
             return False
         with open(mconf_path, "r") as f:
-            mconf = yaml.load(f)
+            mconf = yaml.load(f, Loader=yaml.FullLoader)
         self.svc = joblib.load(mconf['mpath'])
-        drlbp_point, drlbp_radius, drlbp_occupied, drlbp_k_c = mconf_path['drlbp']
+        drlbp_point, drlbp_radius, drlbp_occupied, drlbp_k_c = mconf['drlbp']
         self.drlbp = TdFeatureDRLBP(drlbp_point, drlbp_radius, drlbp_occupied, drlbp_k_c)
         self.drlbp.k = mconf['k']
         options = {"equScale": SamplePreMethod.EQU_SCALE}
@@ -50,6 +50,6 @@ class TdSVC:
             gimg = zoomImage(gimg, self.quantity)
         ft = self.drlbp.getDRLBP(gimg)
         pred = self.svc.predict(ft.reshape(1, -1))
-        if None in [ft, pred]:
+        if ft is None or pred is None:
             return None
         return bool(pred[0])

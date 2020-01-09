@@ -813,7 +813,8 @@ class TdMergingTextLine:
     def _get_dirtection_threshold(data, id1, id2):
         ''' 获取方向判断阈值,返回固定值
         '''
-        w, h = data.getParamHeight(id1), data.getParamWidth(id1)
+        bid = id1 if data.getParamAreaSize(id1) > data.getParamAreaSize(id2) else id2
+        w, h = data.getParamHeight(bid), data.getParamWidth(bid)
         x = w/h if h > 0 else 1
         x = 1/x if x > 1 else x
         threshold = math.degrees(math.atan(x))

@@ -5,5 +5,5 @@ drlbp:
 - 10
 k: 3
 method: equScale
-model: conf/svc/idcard.model
+mpath: conf/svc/idcard.model
 quantity: 100000
