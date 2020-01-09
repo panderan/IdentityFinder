@@ -3,16 +3,16 @@
 ''' Merge Display Widget
 '''
 import logging
+from copy import deepcopy
 import cv2
 from PyQt5.QtCore import pyqtSignal
 from tdlib.morphops import TdMorphOperator
 from tdlib.filters import TdFilter
-from tdlib.location import TdMergingTextLine, threshold_of_position_ratio_for_idcard
+from tdlib.location import TdMergingTextLine
 from gui.app_widgets.basic_display_widget import BasicDisplayWidget
 from gui.app_widgets.merging_control_widget import MergeDisplayCtrlWidget
 from gui.app_widgets.verbose_show_widget import VerboseDisplayWidget
 from conf.config import TdConfig, AppSettings, TdMergeTLConfigKey
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class MergeDisplayWidget(BasicDisplayWidget):
         self.merger = TdMergingTextLine()
         self.cur_config = {}
         self.dr_widget = None
-        self.input_image = [] 
-        self.output_data = [] 
+        self.input_image = []
+        self.output_data = []
         self.color_image = None
         return
 
@@ -97,3 +97,9 @@ class MergeDisplayWidget(BasicDisplayWidget):
         '''
         self.setDisplayQImage(qimage)
         return
+
+    def getResult(self):
+        ''' 获得输出
+        '''
+        self.doPreprocess()
+        return self.output_data

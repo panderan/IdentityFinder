@@ -28,7 +28,7 @@ class TdSVC:
     def init(self, mconf_path):
         ''' 初始化 SVC 模型
         '''
-        if not Path(mconf_path).exists():
+        if mconf_path is None or not Path(mconf_path).exists():
             return False
         with open(mconf_path, "r") as f:
             mconf = yaml.load(f, Loader=yaml.FullLoader)

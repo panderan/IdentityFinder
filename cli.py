@@ -77,7 +77,6 @@ class Cli:
         self.filter = TdFilter()
         self.merger = TdMergingTextLine()
         self.svc = TdSVC()
-        
 
         self.config = TdConfig()
         self.morpher = TdMorphOperator()
@@ -113,6 +112,7 @@ class Cli:
         mconf_path = self.config.getSVCConfig().get(TdSVCConfigKey.MCONF_PATH, None)
         if mconf_path is not None:
             final_tl = self.svcFunc(tlregionlist, mconf_path)
+        return final_tl
 
     def parseArgs(self):
         ''' 解析命令行参数
@@ -230,16 +230,15 @@ class Cli:
         if CliShowOptions.SHOW_MERGE not in self.show_opts and self.save_option is not CliSaveOptions.MERGE:
             return
 
-        rgb_image = self.preprocessing.rgb_image.copy()
         for item in tlregionlist:
+            rgb_image = self.preprocessing.rgb_image.copy()
             rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, item[-1])
-
-        if CliShowOptions.SHOW_MERGE in self.show_opts:
-            plt.imshow(rgb_image)
-            plt.show()
-        if self.save_option is CliSaveOptions.MERGE:
-            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-            cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
+            if CliShowOptions.SHOW_MERGE in self.show_opts:
+                plt.imshow(rgb_image)
+                plt.show()
+            if self.save_option is CliSaveOptions.MERGE:
+                bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+                cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
 
     def showSVC(self, final_tl):
         ''' 显示最终文本行
@@ -247,17 +246,16 @@ class Cli:
         if CliShowOptions.SHOW_SVC not in self.show_opts and self.save_option is not CliSaveOptions.SVC:
             return
 
-        rgb_image = self.preprocessing.rgb_image.copy()
         for item in final_tl:
+            rgb_image = self.preprocessing.rgb_image.copy()
             rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, item[-2])
             rgb_image = TdMergingTextLine.drawRegions(rgb_image, (0, 255, 0), cv2.LINE_4, item[-1])
-
-        if CliShowOptions.SHOW_SVC in self.show_opts:
-            plt.imshow(rgb_image)
-            plt.show()
-        if self.save_option is CliSaveOptions.SVC:
-            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-            cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
+            if CliShowOptions.SHOW_SVC in self.show_opts:
+                plt.imshow(rgb_image)
+                plt.show()
+            if self.save_option is CliSaveOptions.SVC:
+                bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+                cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
 
     def prepFunc(self, rgb_image):
         ''' 图像预处理
