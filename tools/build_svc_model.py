@@ -161,7 +161,7 @@ if __name__ == "__main__":
     joblib.dump(svc, mpath)
     print("SVC Model Saved to %s ."%mpath)
 
-    ypath = "conf/svc/%s.yaml"%model_name
+    ypath, model_conf = "conf/svc/%s.yaml"%model_name, {}
     if Path(ypath).exists():
         with open(ypath, "r") as f:
             model_conf = yaml.load(f, Loader=yaml.FullLoader)
