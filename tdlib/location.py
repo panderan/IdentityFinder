@@ -930,3 +930,40 @@ def debugGenerateCompareImage(debug_data, elec_id, sat_id):
     image = cv2.drawContours(image, [region], 0, (255, 0, 0), cv2.FILLED)
 
     return image
+
+
+
+class TdMergingOverlap(TdMergingTextLine):
+    ''' 合并文本行
+    '''
+    def __init__(self):
+        TdMergingTextLine.__init__(self)
+
+    def mergeTextLineOnce(self, data, cur_id):
+        ''' 一次合并
+        '''
+        # 选举出待合并 region
+        region_ids = self._selectCandidate(data, cur_id)
+        if len(region_ids) == 0:
+            return False
+
+        # 计算出与邻近文本行的重叠率
+        ratios = []
+        for candidate_id in region_ids:
+            region1_params = data.getRegionParams(cur_id)
+            region2_params = data.getRegionParams(candidate_id)
+            ratio = 0.0 \
+                    if region1_params is None or region2_params is None else\
+                    self._getOverlapRatio(data, cur_id, candidate_id)
+            ratios.append((ratio, candidate_id))
+
+        # 寻找本次重叠率大于阈值且最高的邻近文本行
+        ratios.sort(key=lambda i: i[0], reverse=True)
+        best_id = ratios[0]
+        if best_id[0] > self.t_of_overlap_ratio:
+            best_id = best_id[-1]
+        else:
+            return False
+
+        self._mergeTowRegions(data, cur_id, best_id)
+        return True

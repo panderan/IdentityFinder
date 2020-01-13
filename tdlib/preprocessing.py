@@ -62,6 +62,9 @@ class TdPreprocessing:
                        TdPrepConfigKeys.OFFSET: 10}
         self.debug = TdPreprocessingDebugData()
 
+        self.zoom_level = 0.0
+        self.origin_image = None
+
         return
 
     def doPreprocessing(self, image, config=None):
@@ -139,8 +142,11 @@ class TdPreprocessing:
         if val is None:
             return
         # 缩放图像并获得宽高
-        zoom_level = sqrt(val.shape[0] * val.shape[1] / self.total_pixels)
-        self.__rgb_image = cv2.resize(val, (int(val.shape[1]/zoom_level), int(val.shape[0]/zoom_level)))
+        self.zoom_level = sqrt(val.shape[0] * val.shape[1] / self.total_pixels)
+        self.origin_image = val
+        self.__rgb_image = cv2.resize(val, (int(val.shape[1]/self.zoom_level), \
+                                            int(val.shape[0]/self.zoom_level)) \
+                                     )
         self.height, self.width = self.__rgb_image.shape[:2] #高，宽=行，列
         # 获得多种灰度图
         self.gray = cv2.cvtColor(self.__rgb_image, cv2.COLOR_RGB2GRAY)

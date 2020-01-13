@@ -4,6 +4,7 @@
 mainwindow.py
 '''
 import logging
+import numpy as np
 from PyQt5.QtCore import Qt, QFile, QIODevice, QTextStream
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QFileDialog, QLabel
 from PyQt5.QtGui import QImage, QIcon
@@ -13,8 +14,10 @@ from gui.app_widgets.preprocess_display_widget import PreprocessDisplayWidget
 from gui.app_widgets.extract_display_widget import ExtractDisplayWidget
 from gui.app_widgets.merging_display_widget import MergeDisplayWidget
 from gui.app_widgets.feature_display_widget import SVCDisplayWidget
+from gui.app_widgets.ocr_texts_dialog import OCRTextsDialog
 from conf.config import TdConfig, AppSettings, TdExtractConfigKey
 from tdlib.extraction import ExtractDirection
+from tdlib.ocr import TdOCR
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,10 @@ class AppMainWindow(QMainWindow):
         self.extract_display_widget = None
         self.merging_display_widget = None
         self.svc_display_widget = None
+
+        self.ocr = TdOCR()
+        self.image_name = None
+
         # 建立主窗体
         self.ui = ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -69,6 +76,7 @@ class AppMainWindow(QMainWindow):
         self.ui.action_identify_with_feature.triggered.connect(self.onActionIdentifyWithFeature)
         self.ui.action_load_config.triggered.connect(self.onAction_MenuBar_LoadConf)
         self.ui.btn_locate.clicked.connect(self.onActionBtnLocation)
+        self.ui.btn_recognize.clicked.connect(self.onActionBtnRecognization)
 
     def initResources(self):
         '''
@@ -112,6 +120,7 @@ class AppMainWindow(QMainWindow):
                                         '~', "Image files (*.jpg *.gif *.png)")
         if fname == '':
             return
+        self.image_name = fname.split('/')[-1][0:-4]
         logger.info("Open Image:%s", fname)
         input_image = QImage(fname).convertToFormat(QImage.Format_RGB32)
         self.preprocess_display_widget.setImage(input_image)
@@ -320,8 +329,24 @@ class AppMainWindow(QMainWindow):
             data.append((name, imgs[-1], tl_regions))
             datas.extend(data)
         self.svc_display_widget.input_data = (datas, self.preprocess_display_widget.preprocesser.rgb_image)
-    
+
     def onActionBtnLocation(self):
         ''' 进行文本定位
         '''
-        self.svc_display_widget.doPreprocess()
+        texts_ret = self.svc_display_widget.doPreprocess()
+        return texts_ret
+
+    def onActionBtnRecognization(self):
+        ''' 文本识别
+        '''
+        _, _, tlsin1 = self.onActionBtnLocation()
+
+        zoom_level = self.preprocess_display_widget.preprocesser.zoom_level
+        tls = [np.int64(i*zoom_level) for i in tlsin1]
+        origin_image = self.preprocess_display_widget.preprocesser.origin_image.copy()
+        texts = self.ocr.ocr(tls, origin_image, self.image_name)
+        dialog = OCRTextsDialog(texts)
+        dialog.show()
+        dialog.exec_()
+        print("%s %s"%(self.image_name, texts))
+        return texts

@@ -2,6 +2,7 @@
     <qresource prefix="/images">
         <file>icon.png</file>
         <file>verbose.png</file>
+        <file>ocr.png</file>
     </qresource>
     <qresource prefix="/string">
         <file>strings</file>

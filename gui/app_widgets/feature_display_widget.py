@@ -5,7 +5,7 @@
 import logging
 import cv2
 from PyQt5.QtCore import pyqtSignal
-from tdlib.location import TdMergingTextLine
+from tdlib.location import TdMergingTextLine, TdMergingOverlap
 from tdlib.common import crop_rect
 from tdlib.svc import TdSVC
 from gui.app_widgets.basic_display_widget import BasicDisplayWidget
@@ -65,21 +65,22 @@ class SVCDisplayWidget(BasicDisplayWidget):
             final_tl.append((name, tlregions, tl))
 
         # 最终合并
-        ret_final_mtl, ret_final_stl = final_tl[0][1], final_tl[0][2]
-        if len(final_tl) > 1:
-            print("Need Merge")
-            ret_final_mtl, ret_final_stl = [], []
-            for item in final_tl:
-                name, mtl, stl = item
-                ret_final_mtl.extend(mtl)
-                ret_final_stl.extend(stl)
-        self.output_data = (ret_final_mtl, ret_final_stl)
+        ret_final_mtl, ret_final_stl = [], []
+        for item in final_tl:
+            name, mtl, stl = item
+            ret_final_mtl.extend(mtl)
+            ret_final_stl.extend(stl)
+        merger = TdMergingOverlap()
+        merger.setConfig(TdConfig(AppSettings.config_file_path).getMergeTLConfig())
+        tlsin1 = merger.mergeTextLine(ret_final_stl)
+        self.output_data = (ret_final_mtl, ret_final_stl, tlsin1)
 
         # 显示结果
         rgb_image = self.input_data[1].copy()
         rgb_image = TdMergingTextLine.drawRegions(rgb_image, (255, 255, 255), cv2.LINE_4, ret_final_mtl)
-        rgb_image = TdMergingTextLine.drawRegions(rgb_image, (0, 255, 0), cv2.LINE_4, ret_final_stl)
+        rgb_image = TdMergingTextLine.drawRegions(rgb_image, (0, 255, 0), cv2.LINE_4, tlsin1)
         self.setDisplayCvImage(rgb_image)
+        return self.output_data
 
 
     def openControlPanel(self):

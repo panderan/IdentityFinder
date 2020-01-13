@@ -46,9 +46,7 @@ class MergeDisplayWidget(BasicDisplayWidget):
         ''' 进行预处理
         '''
         # 获取参数，进行预处理
-        megconf = self.control_panel.getConfiguration() \
-                  if self.control_panel is not None else \
-                  TdConfig(AppSettings.config_file_path).getMergeTLConfig()
+        megconf = self.getConfig()
         self.merger.setConfig(megconf)
 
         # 获取输入数据
@@ -91,6 +89,14 @@ class MergeDisplayWidget(BasicDisplayWidget):
             self.control_panel.ui.btn_ok.clicked.connect(self.doPreprocess)
         self.control_panel.show()
         return
+
+    def getConfig(self):
+        ''' 获取配置
+        '''
+        megconf = self.control_panel.getConfiguration() \
+                  if self.control_panel is not None else \
+                  TdConfig(AppSettings.config_file_path).getMergeTLConfig()
+        return megconf
 
     def setImage(self, qimage):
         ''' 载入图像

@@ -15,11 +15,11 @@ from tdlib.preprocessing import TdPreprocessing
 from tdlib.extraction import TdExtractConnectDomain, ExtractDirection
 from tdlib.filters import TdFilter
 from tdlib.morphops import TdMorphOperator
-from tdlib.location import TdMergingTextLine
+from tdlib.location import TdMergingTextLine, TdMergingOverlap
 from tdlib.svc import TdSVC
 from tdlib.common import crop_rect
+from tdlib.ocr import TdOCR
 from conf.config import TdConfig, TdExtractConfigKey, TdSVCConfigKey
-
 
 logging.basicConfig(level=logging.INFO, \
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
@@ -77,6 +77,7 @@ class Cli:
         self.filter = TdFilter()
         self.merger = TdMergingTextLine()
         self.svc = TdSVC()
+        self.ocr = TdOCR()
 
         self.config = TdConfig()
         self.morpher = TdMorphOperator()
@@ -112,7 +113,14 @@ class Cli:
         mconf_path = self.config.getSVCConfig().get(TdSVCConfigKey.MCONF_PATH, None)
         if mconf_path is not None:
             final_tl = self.svcFunc(tlregionlist, mconf_path)
-        return final_tl
+
+        # 合并多通道文本行
+        texts_ret = self.finalRet("Image", final_tl)
+
+        # OCR 识别
+        self.ocrFunc(texts_ret)
+
+        return True
 
     def parseArgs(self):
         ''' 解析命令行参数
@@ -136,7 +144,8 @@ class Cli:
                            "extract": CliShowOptions.SHOW_EXTRACT,
                            "morph": CliShowOptions.SHOW_MORPH,
                            "merge": CliShowOptions.SHOW_MERGE,
-                           "textline": CliShowOptions.SHOW_SVC}
+                           "textline": CliShowOptions.SHOW_SVC,
+                           "final": CliShowOptions.SHOW_RESULT}
                 self.show_opts = [options.get(i, CliShowOptions.SHOW_NONE) for i in arguments]
             elif cmd in '--gray':
                 arguments = arg.split(',')
@@ -257,6 +266,18 @@ class Cli:
                 bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
                 cv2.imwrite("data/save/"+self.image_name+"-"+item[0]+".jpg", bgr_image)
 
+    def showFinal(self, tlsin1):
+        ''' 显示最终结果
+        '''
+        if CliShowOptions.SHOW_RESULT not in self.show_opts:
+            return
+        zoom_level = self.preprocessing.zoom_level
+        tls = [np.int64(i*zoom_level) for i in tlsin1]
+        origin_image = self.preprocessing.origin_image.copy()
+        origin_image = TdMergingTextLine.drawRegions(origin_image, (255, 255, 255), cv2.LINE_4, tls)
+        plt.imshow(origin_image)
+        plt.show()
+
     def prepFunc(self, rgb_image):
         ''' 图像预处理
         '''
@@ -344,6 +365,30 @@ class Cli:
             final_tl.append((item[0], item[-1], tl))
         self.showSVC(final_tl)
         return final_tl
+
+    def finalRet(self, name, final_tl):
+        ''' 合并多个通道的文本行
+        '''
+        tls = []
+        for item in final_tl:
+            tls.extend(item[-1])
+
+        config = self.config.getMergeTLConfig()
+        merger = TdMergingOverlap()
+        merger.setConfig(config)
+        tlsin1 = merger.mergeTextLine(tls)
+        self.showFinal(tlsin1)
+        return (name, tlsin1)
+
+    def ocrFunc(self, tls):
+        ''' OCR
+        '''
+        zoom_level = self.preprocessing.zoom_level
+        tls = [np.int64(i*zoom_level) for i in tls[1]]
+        origin_image = self.preprocessing.origin_image.copy()
+        texts = self.ocr.ocr(tls, origin_image, self.image_name)
+        print("%s %s"%(self.image_name, texts))
+        return texts
 
     def makeSVCSample(self, tlregionlist):
         ''' 生成特征分类样本
